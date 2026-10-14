@@ -16,23 +16,22 @@ st.set_page_config(
 
 # =========================================================
 # ARCHIVO BASE
-# IMPORTANTE:
-# El Excel está en el mismo repositorio que app.py
 # =========================================================
 
+# El archivo concentrado.xlsx debe estar en el mismo
+# repositorio de GitHub que este app.py
 ARCHIVO_BASE = Path("concentrado.xlsx")
 
 HOJA_BASE = "concentrado"
 
 
 # =========================================================
-# COLORES
+# COLORES CASANOVA
 # =========================================================
 
 AZUL_MARINO = "#213769"
 AZUL_CASANOVA = "#004876"
 AMARILLO = "#FFB700"
-FONDO = "#F7F9FC"
 BLANCO = "#FFFFFF"
 
 
@@ -90,11 +89,8 @@ def fecha_visible(valor):
         return "Sin información"
 
     try:
-
         return pd.to_datetime(valor).strftime("%d/%m/%Y")
-
     except:
-
         return valor_visible(valor)
 
 
@@ -113,8 +109,31 @@ def dias_visible(valor):
         return f"{numero:,.1f} días"
 
     except:
-
         return valor_visible(valor)
+
+
+# =========================================================
+# FUNCIONES PARA TARJETAS
+# =========================================================
+
+def tarjeta(campo, valor):
+
+    return f"""
+<div class="tarjeta">
+<div class="campo">{campo}</div>
+<div class="valor">{valor}</div>
+</div>
+"""
+
+
+def tarjeta_azul(campo, valor):
+
+    return f"""
+<div class="tarjeta-azul">
+<div class="campo-blanco">{campo}</div>
+<div class="valor-blanco">{valor}</div>
+</div>
+"""
 
 
 # =========================================================
@@ -122,135 +141,205 @@ def dias_visible(valor):
 # =========================================================
 
 st.markdown(
-    f"""
-    <style>
+f"""
+<style>
 
-    .stApp {{
-        background-color: {FONDO};
-    }}
+.stApp {{
+    background-color: #F7F9FC;
+}}
 
-    .titulo-principal {{
-        color: {AZUL_MARINO};
-        font-size: 30px;
-        font-weight: 800;
-        margin-bottom: 0px;
-    }}
 
-    .subtitulo {{
-        color: #64748B;
-        font-size: 14px;
-        margin-bottom: 20px;
-    }}
+/* =====================================================
+   TÍTULO
+   ===================================================== */
 
-    .titulo-seccion {{
-        color: {AZUL_MARINO};
-        font-size: 21px;
-        font-weight: 750;
-        margin-top: 22px;
-        margin-bottom: 12px;
-    }}
+.titulo-principal {{
+    color: {AZUL_MARINO};
+    font-size: 30px;
+    font-weight: 800;
+    margin-bottom: 0px;
+}}
 
-    .tarjeta {{
-        background: {BLANCO};
-        border: 1px solid #D8E1EF;
-        border-radius: 14px;
-        padding: 16px 18px;
-        min-height: 78px;
-        box-shadow: 0 2px 8px rgba(33,55,105,0.06);
-        margin-bottom: 12px;
-    }}
+.subtitulo {{
+    color: #64748B;
+    font-size: 14px;
+    margin-bottom: 20px;
+}}
 
-    .tarjeta-piso {{
-        background: {BLANCO};
-        border: 2px solid {AMARILLO};
-        border-radius: 14px;
-        padding: 20px;
-        text-align: center;
-        box-shadow: 0 3px 10px rgba(255,183,0,0.12);
-        margin-bottom: 15px;
-    }}
 
-    .total-piso {{
-        background: linear-gradient(
-            135deg,
-            {AZUL_MARINO},
-            {AZUL_CASANOVA}
-        );
-        color: white;
-        border-radius: 16px;
-        padding: 20px 24px;
-        margin-bottom: 25px;
-        box-shadow: 0 4px 14px rgba(33,55,105,0.18);
-    }}
+/* =====================================================
+   TÍTULOS DE SECCIÓN
+   ===================================================== */
 
-    .total-piso-titulo {{
-        font-size: 14px;
-        font-weight: 600;
-        opacity: 0.9;
-    }}
+.titulo-seccion {{
+    color: {AZUL_MARINO};
+    font-size: 21px;
+    font-weight: 750;
+    margin-top: 22px;
+    margin-bottom: 12px;
+}}
 
-    .total-piso-numero {{
-        font-size: 38px;
-        font-weight: 800;
-        margin-top: 4px;
-    }}
 
-    .campo {{
-        color: #64748B;
-        font-size: 12px;
-        font-weight: 600;
-        margin-bottom: 5px;
-    }}
+/* =====================================================
+   TARJETAS
+   ===================================================== */
 
-    .valor {{
-        color: #172033;
-        font-size: 17px;
-        font-weight: 700;
-        word-break: break-word;
-    }}
+.tarjeta {{
+    background: {BLANCO};
+    border: 1px solid #D8E1EF;
+    border-radius: 14px;
+    padding: 16px 18px;
+    min-height: 78px;
+    box-shadow: 0 2px 8px rgba(33,55,105,0.06);
+    margin-bottom: 12px;
+}}
 
-    .dias-grande {{
-        color: {AZUL_MARINO};
-        font-size: 34px;
-        font-weight: 800;
-    }}
+.tarjeta-azul {{
+    background: {AZUL_CASANOVA};
+    border: none;
+    color: white;
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: 0 3px 10px rgba(0,72,118,0.18);
+}}
 
-    .dias-label {{
-        color: #64748B;
-        font-size: 13px;
-        font-weight: 600;
-    }}
+.tarjeta-piso {{
+    background: {BLANCO};
+    border: 2px solid {AMARILLO};
+    border-radius: 14px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 3px 10px rgba(255,183,0,0.12);
+}}
 
-    .estado-si {{
-        background: #EAF8F0;
-        color: #198754;
-        border: 1px solid #BFE8CE;
-        border-radius: 10px;
-        padding: 10px 14px;
-        font-weight: 700;
-        margin-bottom: 12px;
-    }}
 
-    .estado-no {{
-        background: #FFF7E0;
-        color: #A66B00;
-        border: 1px solid #FFE19A;
-        border-radius: 10px;
-        padding: 10px 14px;
-        font-weight: 700;
-        margin-bottom: 12px;
-    }}
+/* =====================================================
+   CAMPOS
+   ===================================================== */
 
-    .separador {{
-        height: 2px;
-        background: #DCE4F0;
-        margin: 28px 0;
-        border-radius: 5px;
-    }}
+.campo {{
+    color: #64748B;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 5px;
+}}
 
-    </style>
-    """,
-    unsafe_allow_html=True
+.valor {{
+    color: #172033;
+    font-size: 17px;
+    font-weight: 700;
+    word-break: break-word;
+}}
+
+.campo-blanco {{
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 5px;
+}}
+
+.valor-blanco {{
+    color: white;
+    font-size: 17px;
+    font-weight: 700;
+}}
+
+
+/* =====================================================
+   TOTAL PISO
+   ===================================================== */
+
+.total-piso {{
+    background: linear-gradient(
+        135deg,
+        {AZUL_MARINO},
+        {AZUL_CASANOVA}
+    );
+    color: white;
+    border-radius: 16px;
+    padding: 20px 24px;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 14px rgba(33,55,105,0.18);
+}}
+
+.total-piso-titulo {{
+    font-size: 14px;
+    font-weight: 600;
+    opacity: 0.9;
+}}
+
+.total-piso-numero {{
+    font-size: 38px;
+    font-weight: 800;
+    margin-top: 4px;
+}}
+
+
+/* =====================================================
+   PISO
+   ===================================================== */
+
+.dias-grande {{
+    color: {AZUL_MARINO};
+    font-size: 34px;
+    font-weight: 800;
+}}
+
+.dias-label {{
+    color: #64748B;
+    font-size: 13px;
+    font-weight: 600;
+}}
+
+
+/* =====================================================
+   ESTADOS
+   ===================================================== */
+
+.estado-si {{
+    background: #EAF8F0;
+    color: #198754;
+    border: 1px solid #BFE8CE;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-weight: 700;
+    margin-bottom: 12px;
+}}
+
+.estado-no {{
+    background: #FFF7E0;
+    color: #A66B00;
+    border: 1px solid #FFE19A;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-weight: 700;
+    margin-bottom: 12px;
+}}
+
+
+/* =====================================================
+   SEPARADOR
+   ===================================================== */
+
+.separador {{
+    height: 2px;
+    background: #DCE4F0;
+    margin: 28px 0;
+    border-radius: 5px;
+}}
+
+
+/* =====================================================
+   BUSCADOR
+   ===================================================== */
+
+div[data-baseweb="input"] {{
+    border-radius: 10px;
+}}
+
+</style>
+""",
+unsafe_allow_html=True
 )
 
 
@@ -259,13 +348,13 @@ st.markdown(
 # =========================================================
 
 st.markdown(
-    '<div class="titulo-principal">🚗 CASANOVA | CONTROL DE UNIDADES</div>',
-    unsafe_allow_html=True
+'<div class="titulo-principal">🚗 CASANOVA | CONTROL DE UNIDADES</div>',
+unsafe_allow_html=True
 )
 
 st.markdown(
-    '<div class="subtitulo">Consulta individual de unidades</div>',
-    unsafe_allow_html=True
+'<div class="subtitulo">Consulta individual de unidades</div>',
+unsafe_allow_html=True
 )
 
 
@@ -279,13 +368,7 @@ try:
 
 except Exception as e:
 
-    st.error(
-        "No se pudo cargar el archivo concentrado.xlsx"
-    )
-
-    st.write(
-        "Verifica que concentrado.xlsx esté en el mismo repositorio que app.py."
-    )
+    st.error("No se pudo cargar el archivo concentrado.xlsx")
 
     st.code(str(e))
 
@@ -311,19 +394,16 @@ else:
     unidades_en_piso = 0
 
 
-st.markdown(
-    f"""
-    <div class="total-piso">
-        <div class="total-piso-titulo">
-            🏭 TOTAL DE UNIDADES EN PISO
-        </div>
+# IMPORTANTE:
+# El HTML está sin espacios de indentación para que
+# Streamlit no lo interprete como código.
 
-        <div class="total-piso-numero">
-            {unidades_en_piso:,}
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True
+st.markdown(
+f"""<div class="total-piso">
+<div class="total-piso-titulo">🏭 TOTAL DE UNIDADES EN PISO</div>
+<div class="total-piso-numero">{unidades_en_piso:,}</div>
+</div>""",
+unsafe_allow_html=True
 )
 
 
@@ -332,8 +412,8 @@ st.markdown(
 # =========================================================
 
 st.markdown(
-    '<div class="titulo-seccion">🔎 Buscar unidad</div>',
-    unsafe_allow_html=True
+'<div class="titulo-seccion">🔎 Buscar unidad</div>',
+unsafe_allow_html=True
 )
 
 busqueda = st.text_input(
@@ -468,12 +548,8 @@ serie = valor_visible(
 
 
 st.markdown(
-    f"""
-    <div class="titulo-seccion">
-        🚗 {placa} | {serie}
-    </div>
-    """,
-    unsafe_allow_html=True
+f"""<div class="titulo-seccion">🚗 {placa} | {serie}</div>""",
+unsafe_allow_html=True
 )
 
 
@@ -482,8 +558,8 @@ st.markdown(
 # =========================================================
 
 st.markdown(
-    '<div class="titulo-seccion">📋 Información general</div>',
-    unsafe_allow_html=True
+'<div class="titulo-seccion">📋 Información general</div>',
+unsafe_allow_html=True
 )
 
 col1, col2, col3, col4 = st.columns(4)
@@ -492,14 +568,10 @@ col1, col2, col3, col4 = st.columns(4)
 with col1:
 
     st.markdown(
-        f"""
-        <div class="tarjeta">
-            <div class="campo">LÍNEA</div>
-            <div class="valor">
-                {valor_visible(unidad.get("LINEA"))}
-            </div>
-        </div>
-        """,
+        tarjeta(
+            "LÍNEA",
+            valor_visible(unidad.get("LINEA"))
+        ),
         unsafe_allow_html=True
     )
 
@@ -507,14 +579,10 @@ with col1:
 with col2:
 
     st.markdown(
-        f"""
-        <div class="tarjeta">
-            <div class="campo">MODELO</div>
-            <div class="valor">
-                {valor_visible(unidad.get("MODELO"))}
-            </div>
-        </div>
-        """,
+        tarjeta(
+            "MODELO",
+            valor_visible(unidad.get("MODELO"))
+        ),
         unsafe_allow_html=True
     )
 
@@ -522,14 +590,10 @@ with col2:
 with col3:
 
     st.markdown(
-        f"""
-        <div class="tarjeta">
-            <div class="campo">ESTATUS</div>
-            <div class="valor">
-                {valor_visible(unidad.get("ESTATUS"))}
-            </div>
-        </div>
-        """,
+        tarjeta(
+            "ESTATUS",
+            valor_visible(unidad.get("ESTATUS"))
+        ),
         unsafe_allow_html=True
     )
 
@@ -537,14 +601,10 @@ with col3:
 with col4:
 
     st.markdown(
-        f"""
-        <div class="tarjeta">
-            <div class="campo">SUBESTATUS</div>
-            <div class="valor">
-                {valor_visible(unidad.get("SUBESTATUS"))}
-            </div>
-        </div>
-        """,
+        tarjeta(
+            "SUBESTATUS",
+            valor_visible(unidad.get("SUBESTATUS"))
+        ),
         unsafe_allow_html=True
     )
 
@@ -554,8 +614,8 @@ with col4:
 # =========================================================
 
 st.markdown(
-    '<div class="titulo-seccion">🚘 Datos de la unidad</div>',
-    unsafe_allow_html=True
+'<div class="titulo-seccion">🚘 Datos de la unidad</div>',
+unsafe_allow_html=True
 )
 
 
@@ -565,14 +625,10 @@ col1, col2, col3 = st.columns(3)
 with col1:
 
     st.markdown(
-        f"""
-        <div class="tarjeta">
-            <div class="campo">NOMBRE DEL CLIENTE</div>
-            <div class="valor">
-                {valor_visible(unidad.get("NOMBRE DEL CLIENTE"))}
-            </div>
-        </div>
-        """,
+        tarjeta(
+            "NOMBRE DEL CLIENTE",
+            valor_visible(unidad.get("NOMBRE DEL CLIENTE"))
+        ),
         unsafe_allow_html=True
     )
 
@@ -580,14 +636,10 @@ with col1:
 with col2:
 
     st.markdown(
-        f"""
-        <div class="tarjeta">
-            <div class="campo">ALMACÉN</div>
-            <div class="valor">
-                {valor_visible(unidad.get("ALMACÉN"))}
-            </div>
-        </div>
-        """,
+        tarjeta(
+            "ALMACÉN",
+            valor_visible(unidad.get("ALMACÉN"))
+        ),
         unsafe_allow_html=True
     )
 
@@ -595,14 +647,10 @@ with col2:
 with col3:
 
     st.markdown(
-        f"""
-        <div class="tarjeta">
-            <div class="campo">UNIDAD DE NEGOCIO</div>
-            <div class="valor">
-                {valor_visible(unidad.get("UNIDAD NEGOCIO"))}
-            </div>
-        </div>
-        """,
+        tarjeta(
+            "UNIDAD DE NEGOCIO",
+            valor_visible(unidad.get("UNIDAD NEGOCIO"))
+        ),
         unsafe_allow_html=True
     )
 
@@ -613,14 +661,10 @@ col1, col2, col3 = st.columns(3)
 with col1:
 
     st.markdown(
-        f"""
-        <div class="tarjeta">
-            <div class="campo">GPS</div>
-            <div class="valor">
-                {valor_visible(unidad.get("GPS"))}
-            </div>
-        </div>
-        """,
+        tarjeta(
+            "GPS",
+            valor_visible(unidad.get("GPS"))
+        ),
         unsafe_allow_html=True
     )
 
@@ -628,14 +672,10 @@ with col1:
 with col2:
 
     st.markdown(
-        f"""
-        <div class="tarjeta">
-            <div class="campo">PLATAFORMA</div>
-            <div class="valor">
-                {valor_visible(unidad.get("PLATAFORMA"))}
-            </div>
-        </div>
-        """,
+        tarjeta(
+            "PLATAFORMA",
+            valor_visible(unidad.get("PLATAFORMA"))
+        ),
         unsafe_allow_html=True
     )
 
@@ -643,14 +683,10 @@ with col2:
 with col3:
 
     st.markdown(
-        f"""
-        <div class="tarjeta">
-            <div class="campo">¿REPORTA?</div>
-            <div class="valor">
-                {valor_visible(unidad.get("¿REPORTA?"))}
-            </div>
-        </div>
-        """,
+        tarjeta(
+            "¿REPORTA?",
+            valor_visible(unidad.get("¿REPORTA?"))
+        ),
         unsafe_allow_html=True
     )
 
@@ -660,13 +696,13 @@ with col3:
 # =========================================================
 
 st.markdown(
-    '<div class="separador"></div>',
-    unsafe_allow_html=True
+'<div class="separador"></div>',
+unsafe_allow_html=True
 )
 
 st.markdown(
-    '<div class="titulo-seccion">🏭 Piso</div>',
-    unsafe_allow_html=True
+'<div class="titulo-seccion">🏭 Piso</div>',
+unsafe_allow_html=True
 )
 
 
@@ -676,18 +712,11 @@ dias_piso = dias_visible(
 
 
 st.markdown(
-    f"""
-    <div class="tarjeta-piso">
-        <div class="dias-label">
-            DÍAS EN PISO
-        </div>
-
-        <div class="dias-grande">
-            {dias_piso}
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True
+f"""<div class="tarjeta-piso">
+<div class="dias-label">DÍAS EN PISO</div>
+<div class="dias-grande">{dias_piso}</div>
+</div>""",
+unsafe_allow_html=True
 )
 
 
@@ -696,13 +725,13 @@ st.markdown(
 # =========================================================
 
 st.markdown(
-    '<div class="separador"></div>',
-    unsafe_allow_html=True
+'<div class="separador"></div>',
+unsafe_allow_html=True
 )
 
 st.markdown(
-    '<div class="titulo-seccion">📋 Gestoría</div>',
-    unsafe_allow_html=True
+'<div class="titulo-seccion">📋 Gestoría</div>',
+unsafe_allow_html=True
 )
 
 
@@ -725,22 +754,14 @@ tiene_gestoria = (
 if tiene_gestoria:
 
     st.markdown(
-        """
-        <div class="estado-si">
-            ✓ SÍ TIENE GESTORÍA
-        </div>
-        """,
+        '<div class="estado-si">✓ SÍ TIENE GESTORÍA</div>',
         unsafe_allow_html=True
     )
 
 else:
 
     st.markdown(
-        """
-        <div class="estado-no">
-            — SIN GESTORÍA
-        </div>
-        """,
+        '<div class="estado-no">— SIN GESTORÍA</div>',
         unsafe_allow_html=True
     )
 
@@ -751,14 +772,12 @@ col1, col2, col3 = st.columns(3)
 with col1:
 
     st.markdown(
-        f"""
-        <div class="tarjeta">
-            <div class="campo">FOLIO</div>
-            <div class="valor">
-                {valor_visible(unidad.get("Gestorías1.Folio"))}
-            </div>
-        </div>
-        """,
+        tarjeta(
+            "FOLIO",
+            valor_visible(
+                unidad.get("Gestorías1.Folio")
+            )
+        ),
         unsafe_allow_html=True
     )
 
@@ -766,14 +785,12 @@ with col1:
 with col2:
 
     st.markdown(
-        f"""
-        <div class="tarjeta">
-            <div class="campo">ESTATUS DE PÓLIZA</div>
-            <div class="valor">
-                {valor_visible(unidad.get("Estatus poliza"))}
-            </div>
-        </div>
-        """,
+        tarjeta(
+            "ESTATUS DE PÓLIZA",
+            valor_visible(
+                unidad.get("Estatus poliza")
+            )
+        ),
         unsafe_allow_html=True
     )
 
@@ -781,18 +798,12 @@ with col2:
 with col3:
 
     st.markdown(
-        f"""
-        <div class="tarjeta">
-            <div class="campo">FECHA DE CREACIÓN</div>
-            <div class="valor">
-                {fecha_visible(
-                    unidad.get(
-                        "Gestorías1.Fecha de creación"
-                    )
-                )}
-            </div>
-        </div>
-        """,
+        tarjeta(
+            "FECHA DE CREACIÓN",
+            fecha_visible(
+                unidad.get("Gestorías1.Fecha de creación")
+            )
+        ),
         unsafe_allow_html=True
     )
 
@@ -803,18 +814,12 @@ col1, col2, col3 = st.columns(3)
 with col1:
 
     st.markdown(
-        f"""
-        <div class="tarjeta">
-            <div class="campo">ESTADO DE ATENCIÓN</div>
-            <div class="valor">
-                {valor_visible(
-                    unidad.get(
-                        "Gestorías1.Estado de atención"
-                    )
-                )}
-            </div>
-        </div>
-        """,
+        tarjeta(
+            "ESTADO DE ATENCIÓN",
+            valor_visible(
+                unidad.get("Gestorías1.Estado de atención")
+            )
+        ),
         unsafe_allow_html=True
     )
 
@@ -822,18 +827,12 @@ with col1:
 with col2:
 
     st.markdown(
-        f"""
-        <div class="tarjeta">
-            <div class="campo">DÍAS</div>
-            <div class="valor">
-                {valor_visible(
-                    unidad.get(
-                        "Gestorías1.Personalizado"
-                    )
-                )}
-            </div>
-        </div>
-        """,
+        tarjeta(
+            "DÍAS",
+            valor_visible(
+                unidad.get("Gestorías1.Personalizado")
+            )
+        ),
         unsafe_allow_html=True
     )
 
@@ -841,18 +840,12 @@ with col2:
 with col3:
 
     st.markdown(
-        f"""
-        <div class="tarjeta">
-            <div class="campo">CONCEPTOS</div>
-            <div class="valor">
-                {valor_visible(
-                    unidad.get(
-                        "Gestorías1.Conceptos"
-                    )
-                )}
-            </div>
-        </div>
-        """,
+        tarjeta(
+            "CONCEPTOS",
+            valor_visible(
+                unidad.get("Gestorías1.Conceptos")
+            )
+        ),
         unsafe_allow_html=True
     )
 
@@ -862,13 +855,13 @@ with col3:
 # =========================================================
 
 st.markdown(
-    '<div class="separador"></div>',
-    unsafe_allow_html=True
+'<div class="separador"></div>',
+unsafe_allow_html=True
 )
 
 st.markdown(
-    '<div class="titulo-seccion">🔧 Mantenimiento</div>',
-    unsafe_allow_html=True
+'<div class="titulo-seccion">🔧 Mantenimiento</div>',
+unsafe_allow_html=True
 )
 
 
@@ -880,22 +873,14 @@ folio_mantenimiento = unidad.get(
 if tiene_informacion(folio_mantenimiento):
 
     st.markdown(
-        """
-        <div class="estado-si">
-            ✓ TIENE MANTENIMIENTO
-        </div>
-        """,
+        '<div class="estado-si">✓ TIENE MANTENIMIENTO</div>',
         unsafe_allow_html=True
     )
 
 else:
 
     st.markdown(
-        """
-        <div class="estado-no">
-            — SIN MANTENIMIENTO
-        </div>
-        """,
+        '<div class="estado-no">— SIN MANTENIMIENTO</div>',
         unsafe_allow_html=True
     )
 
@@ -906,18 +891,12 @@ col1, col2, col3 = st.columns(3)
 with col1:
 
     st.markdown(
-        f"""
-        <div class="tarjeta">
-            <div class="campo">FOLIO</div>
-            <div class="valor">
-                {valor_visible(
-                    unidad.get(
-                        "Mantenimiento.FOLIO"
-                    )
-                )}
-            </div>
-        </div>
-        """,
+        tarjeta(
+            "FOLIO",
+            valor_visible(
+                unidad.get("Mantenimiento.FOLIO")
+            )
+        ),
         unsafe_allow_html=True
     )
 
@@ -925,18 +904,14 @@ with col1:
 with col2:
 
     st.markdown(
-        f"""
-        <div class="tarjeta">
-            <div class="campo">FECHA DE CREACIÓN</div>
-            <div class="valor">
-                {fecha_visible(
-                    unidad.get(
-                        "Mantenimiento.FECHA DE CREACION DEL FOLIO"
-                    )
-                )}
-            </div>
-        </div>
-        """,
+        tarjeta(
+            "FECHA DE CREACIÓN",
+            fecha_visible(
+                unidad.get(
+                    "Mantenimiento.FECHA DE CREACION DEL FOLIO"
+                )
+            )
+        ),
         unsafe_allow_html=True
     )
 
@@ -944,18 +919,14 @@ with col2:
 with col3:
 
     st.markdown(
-        f"""
-        <div class="tarjeta">
-            <div class="campo">ESTATUS</div>
-            <div class="valor">
-                {valor_visible(
-                    unidad.get(
-                        "Mantenimiento.ESTATUS DEL FOLIO"
-                    )
-                )}
-            </div>
-        </div>
-        """,
+        tarjeta(
+            "ESTATUS",
+            valor_visible(
+                unidad.get(
+                    "Mantenimiento.ESTATUS DEL FOLIO"
+                )
+            )
+        ),
         unsafe_allow_html=True
     )
 
@@ -966,18 +937,12 @@ col1, col2 = st.columns(2)
 with col1:
 
     st.markdown(
-        f"""
-        <div class="tarjeta">
-            <div class="campo">PROVEEDOR</div>
-            <div class="valor">
-                {valor_visible(
-                    unidad.get(
-                        "Mantenimiento.PROVEEDOR"
-                    )
-                )}
-            </div>
-        </div>
-        """,
+        tarjeta(
+            "PROVEEDOR",
+            valor_visible(
+                unidad.get("Mantenimiento.PROVEEDOR")
+            )
+        ),
         unsafe_allow_html=True
     )
 
@@ -985,18 +950,12 @@ with col1:
 with col2:
 
     st.markdown(
-        f"""
-        <div class="tarjeta">
-            <div class="campo">DÍAS</div>
-            <div class="valor">
-                {valor_visible(
-                    unidad.get(
-                        "Mantenimiento.dias"
-                    )
-                )}
-            </div>
-        </div>
-        """,
+        tarjeta(
+            "DÍAS",
+            valor_visible(
+                unidad.get("Mantenimiento.dias")
+            )
+        ),
         unsafe_allow_html=True
     )
 
@@ -1006,13 +965,13 @@ with col2:
 # =========================================================
 
 st.markdown(
-    '<div class="separador"></div>',
-    unsafe_allow_html=True
+'<div class="separador"></div>',
+unsafe_allow_html=True
 )
 
 st.markdown(
-    '<div class="titulo-seccion">🛠️ Ziga Talleres</div>',
-    unsafe_allow_html=True
+'<div class="titulo-seccion">🛠️ Ziga Talleres</div>',
+unsafe_allow_html=True
 )
 
 
@@ -1024,22 +983,14 @@ folio_ziga = unidad.get(
 if tiene_informacion(folio_ziga):
 
     st.markdown(
-        """
-        <div class="estado-si">
-            ✓ TIENE REGISTRO EN ZIGA TALLERES
-        </div>
-        """,
+        '<div class="estado-si">✓ TIENE REGISTRO EN ZIGA TALLERES</div>',
         unsafe_allow_html=True
     )
 
 else:
 
     st.markdown(
-        """
-        <div class="estado-no">
-            — SIN REGISTRO EN ZIGA TALLERES
-        </div>
-        """,
+        '<div class="estado-no">— SIN REGISTRO EN ZIGA TALLERES</div>',
         unsafe_allow_html=True
     )
 
@@ -1050,18 +1001,12 @@ col1, col2, col3 = st.columns(3)
 with col1:
 
     st.markdown(
-        f"""
-        <div class="tarjeta">
-            <div class="campo">FOLIO</div>
-            <div class="valor">
-                {valor_visible(
-                    unidad.get(
-                        "Ziga_Talleres.Folio"
-                    )
-                )}
-            </div>
-        </div>
-        """,
+        tarjeta(
+            "FOLIO",
+            valor_visible(
+                unidad.get("Ziga_Talleres.Folio")
+            )
+        ),
         unsafe_allow_html=True
     )
 
@@ -1069,18 +1014,12 @@ with col1:
 with col2:
 
     st.markdown(
-        f"""
-        <div class="tarjeta">
-            <div class="campo">ESTATUS</div>
-            <div class="valor">
-                {valor_visible(
-                    unidad.get(
-                        "Ziga_Talleres.Estatus"
-                    )
-                )}
-            </div>
-        </div>
-        """,
+        tarjeta(
+            "ESTATUS",
+            valor_visible(
+                unidad.get("Ziga_Talleres.Estatus")
+            )
+        ),
         unsafe_allow_html=True
     )
 
@@ -1088,18 +1027,14 @@ with col2:
 with col3:
 
     st.markdown(
-        f"""
-        <div class="tarjeta">
-            <div class="campo">ÁREA DEL TALLER ACTIVA</div>
-            <div class="valor">
-                {valor_visible(
-                    unidad.get(
-                        "Ziga_Talleres.Área del taller activa"
-                    )
-                )}
-            </div>
-        </div>
-        """,
+        tarjeta(
+            "ÁREA DEL TALLER ACTIVA",
+            valor_visible(
+                unidad.get(
+                    "Ziga_Talleres.Área del taller activa"
+                )
+            )
+        ),
         unsafe_allow_html=True
     )
 
@@ -1110,18 +1045,14 @@ col1, col2 = st.columns(2)
 with col1:
 
     st.markdown(
-        f"""
-        <div class="tarjeta">
-            <div class="campo">FECHA DE INGRESO</div>
-            <div class="valor">
-                {fecha_visible(
-                    unidad.get(
-                        "Ziga_Talleres.Fecha de ingreso"
-                    )
-                )}
-            </div>
-        </div>
-        """,
+        tarjeta(
+            "FECHA DE INGRESO",
+            fecha_visible(
+                unidad.get(
+                    "Ziga_Talleres.Fecha de ingreso"
+                )
+            )
+        ),
         unsafe_allow_html=True
     )
 
@@ -1129,18 +1060,12 @@ with col1:
 with col2:
 
     st.markdown(
-        f"""
-        <div class="tarjeta">
-            <div class="campo">DÍAS</div>
-            <div class="valor">
-                {valor_visible(
-                    unidad.get(
-                        "Ziga_Talleres.dias"
-                    )
-                )}
-            </div>
-        </div>
-        """,
+        tarjeta(
+            "DÍAS",
+            valor_visible(
+                unidad.get("Ziga_Talleres.dias")
+            )
+        ),
         unsafe_allow_html=True
     )
 
@@ -1150,8 +1075,8 @@ with col2:
 # =========================================================
 
 st.markdown(
-    '<div class="separador"></div>',
-    unsafe_allow_html=True
+'<div class="separador"></div>',
+unsafe_allow_html=True
 )
 
 st.caption(
