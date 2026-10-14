@@ -1,343 +1,1128 @@
 import streamlit as st
 import pandas as pd
 from pathlib import Path
-from datetime import date
+
 
 # =========================================================
 # CONFIGURACIÓN
 # =========================================================
+
 st.set_page_config(
-    page_title="Casanova Control de Unidades",
+    page_title="Casanova | Control de Unidades",
     page_icon="🚗",
     layout="wide"
 )
 
-ARCHIVO_MAESTRO = Path(r"Y:\Master Data\Consultas_Estatus-Subestatus.xlsx")
-ARCHIVO_PISOS = Path(r"Y:\KPI´s MONITOREO ESTRATEGICO\PISOS CENTENARIO.xlsx")
-HOJAS_PISOS = ["CENTENARIO", "LALA"]
 
-ESTATUS_TALLERES_ABIERTOS = [
-    "Entrada", "En taller", "Pendiente de entrega",
-    "En validación", "En taller externo"
-]
-ESTATUS_MANTENIMIENTOS_ABIERTOS = [
-    "Vehículo ingresado al taller", "Orden de Servicio en Proceso",
-    "Solicitud Aprobada por el Administrador", "Vehículo listo para entrega",
-    "Solicitud en Aprobación"
-]
-ESTATUS_GESTORIAS_ABIERTOS = [
-    "Confirmación de servicio", "Orden de Servicio Cerrada por el Cliente",
-    "Solicitud en Aprobación", "Orden de Servicio Finalizada",
-    "Orden de Servicio en Proceso", "Carga de documentos",
-    "Validación de documentos"
-]
+# =========================================================
+# ARCHIVO BASE
+# =========================================================
+
+ARCHIVO_BASE = Path(
+    r"C:\Users\epacheco\Music\Nuevo proyecto\concentrado.xlsx"
+)
+
+HOJA_BASE = "concentrado"
 
 
-def limpiar_texto(serie):
-    return (
-        serie.astype("string")
+# =========================================================
+# COLORES CASANOVA
+# =========================================================
+
+AZUL_MARINO = "#213769"
+AZUL_CASANOVA = "#004876"
+AMARILLO = "#FFB700"
+GRIS_NIEBLA = "#EEF2F8"
+BLANCO = "#FFFFFF"
+
+
+# =========================================================
+# CARGAR EXCEL
+# =========================================================
+
+@st.cache_data
+def cargar_datos():
+
+    df = pd.read_excel(
+        ARCHIVO_BASE,
+        sheet_name=HOJA_BASE
+    )
+
+    df.columns = (
+        df.columns
+        .astype(str)
         .str.strip()
-        .str.upper()
-        .replace("", pd.NA)
+    )
+
+    return df
+
+
+# =========================================================
+# FUNCIONES
+# =========================================================
+
+def valor_visible(valor):
+
+    if pd.isna(valor):
+        return "Sin información"
+
+    texto = str(valor).strip()
+
+    if texto == "":
+        return "Sin información"
+
+    return texto
+
+
+def tiene_informacion(valor):
+
+    if pd.isna(valor):
+        return False
+
+    texto = str(valor).strip()
+
+    return texto != ""
+
+
+def fecha_visible(valor):
+
+    if pd.isna(valor):
+        return "Sin información"
+
+    try:
+
+        return pd.to_datetime(valor).strftime("%d/%m/%Y")
+
+    except:
+
+        return valor_visible(valor)
+
+
+def dias_visible(valor):
+
+    if pd.isna(valor):
+        return "Sin información"
+
+    try:
+
+        numero = float(valor)
+
+        if numero.is_integer():
+
+            return f"{int(numero):,} días"
+
+        return f"{numero:,.1f} días"
+
+    except:
+
+        return valor_visible(valor)
+
+
+# =========================================================
+# ESTILO
+# =========================================================
+
+st.markdown(
+    f"""
+    <style>
+
+    /* Fondo general */
+    .stApp {{
+        background-color: #F7F9FC;
+    }}
+
+    /* Título */
+    .titulo-principal {{
+        color: {AZUL_MARINO};
+        font-size: 30px;
+        font-weight: 800;
+        margin-bottom: 0px;
+    }}
+
+    .subtitulo {{
+        color: #64748B;
+        font-size: 14px;
+        margin-bottom: 20px;
+    }}
+
+    /* Títulos de sección */
+    .titulo-seccion {{
+        color: {AZUL_MARINO};
+        font-size: 21px;
+        font-weight: 750;
+        margin-top: 22px;
+        margin-bottom: 12px;
+    }}
+
+    /* Tarjetas */
+    .tarjeta {{
+        background: {BLANCO};
+        border: 1px solid #D8E1EF;
+        border-radius: 14px;
+        padding: 16px 18px;
+        min-height: 78px;
+        box-shadow: 0 2px 8px rgba(33,55,105,0.06);
+        margin-bottom: 12px;
+    }}
+
+    .tarjeta-azul {{
+        background: {AZUL_CASANOVA};
+        border: none;
+        color: white;
+        border-radius: 14px;
+        padding: 18px;
+        box-shadow: 0 3px 10px rgba(0,72,118,0.18);
+    }}
+
+    .tarjeta-piso {{
+        background: {BLANCO};
+        border: 2px solid {AMARILLO};
+        border-radius: 14px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 3px 10px rgba(255,183,0,0.12);
+    }}
+
+    .campo {{
+        color: #64748B;
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 5px;
+    }}
+
+    .valor {{
+        color: #172033;
+        font-size: 17px;
+        font-weight: 700;
+        word-break: break-word;
+    }}
+
+    .valor-blanco {{
+        color: white;
+        font-size: 17px;
+        font-weight: 700;
+    }}
+
+    .dias-grande {{
+        color: {AZUL_MARINO};
+        font-size: 34px;
+        font-weight: 800;
+    }}
+
+    .dias-label {{
+        color: #64748B;
+        font-size: 13px;
+        font-weight: 600;
+    }}
+
+    /* Tarjeta total */
+    .total-piso {{
+        background: linear-gradient(
+            135deg,
+            {AZUL_MARINO},
+            {AZUL_CASANOVA}
+        );
+        color: white;
+        border-radius: 16px;
+        padding: 20px 24px;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 14px rgba(33,55,105,0.18);
+    }}
+
+    .total-piso-titulo {{
+        font-size: 14px;
+        font-weight: 600;
+        opacity: 0.9;
+    }}
+
+    .total-piso-numero {{
+        font-size: 38px;
+        font-weight: 800;
+        margin-top: 4px;
+    }}
+
+    /* Estado */
+    .estado-si {{
+        background: #EAF8F0;
+        color: #198754;
+        border: 1px solid #BFE8CE;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-weight: 700;
+        margin-bottom: 12px;
+    }}
+
+    .estado-no {{
+        background: #FFF7E0;
+        color: #A66B00;
+        border: 1px solid #FFE19A;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-weight: 700;
+        margin-bottom: 12px;
+    }}
+
+    /* Línea divisoria */
+    .separador {{
+        height: 2px;
+        background: #DCE4F0;
+        margin: 28px 0;
+        border-radius: 5px;
+    }}
+
+    /* Search */
+    div[data-baseweb="input"] {{
+        border-radius: 10px;
+    }}
+
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+
+# =========================================================
+# ENCABEZADO
+# =========================================================
+
+st.markdown(
+    '<div class="titulo-principal">🚗 CASANOVA | CONTROL DE UNIDADES</div>',
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    '<div class="subtitulo">Consulta individual de unidades</div>',
+    unsafe_allow_html=True
+)
+
+
+# =========================================================
+# CARGAR INFORMACIÓN
+# =========================================================
+
+try:
+
+    df = cargar_datos()
+
+except Exception as e:
+
+    st.error(
+        "No se pudo cargar el archivo concentrado.xlsx"
+    )
+
+    st.code(
+        r"C:\Users\epacheco\Music\Nuevo proyecto\concentrado.xlsx"
+    )
+
+    st.code(str(e))
+
+    st.stop()
+
+
+# =========================================================
+# TOTAL DE UNIDADES EN PISO
+# =========================================================
+
+columna_dias = "DÍAS EN PISO"
+
+if columna_dias in df.columns:
+
+    unidades_en_piso = (
+        df[columna_dias]
+        .notna()
+        .sum()
+    )
+
+else:
+
+    unidades_en_piso = 0
+
+
+st.markdown(
+    f"""
+    <div class="total-piso">
+        <div class="total-piso-titulo">
+            🏭 TOTAL DE UNIDADES EN PISO
+        </div>
+        <div class="total-piso-numero">
+            {unidades_en_piso:,}
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+
+# =========================================================
+# BUSCADOR
+# =========================================================
+
+st.markdown(
+    '<div class="titulo-seccion">🔎 Buscar unidad</div>',
+    unsafe_allow_html=True
+)
+
+busqueda = st.text_input(
+    "Busca por PLACA o SERIE",
+    placeholder="Ejemplo: PDN1295 o número de serie..."
+)
+
+
+# =========================================================
+# SIN BÚSQUEDA
+# =========================================================
+
+if not busqueda:
+
+    st.info(
+        "Escribe una placa o número de serie para consultar la unidad."
+    )
+
+    st.stop()
+
+
+# =========================================================
+# PREPARAR BÚSQUEDA
+# =========================================================
+
+criterio = busqueda.strip().upper()
+
+
+placas = (
+    df["PLACA"]
+    .astype("string")
+    .fillna("")
+    .str.strip()
+    .str.upper()
+)
+
+
+series = (
+    df["SERIE"]
+    .astype("string")
+    .fillna("")
+    .str.strip()
+    .str.upper()
+)
+
+
+# =========================================================
+# BUSCAR
+# =========================================================
+
+resultado = df[
+    placas.str.contains(
+        criterio,
+        case=False,
+        na=False,
+        regex=False
+    )
+    |
+    series.str.contains(
+        criterio,
+        case=False,
+        na=False,
+        regex=False
+    )
+].copy()
+
+
+# =========================================================
+# SIN RESULTADOS
+# =========================================================
+
+if resultado.empty:
+
+    st.warning(
+        f"No se encontró ninguna unidad con: {busqueda}"
+    )
+
+    st.stop()
+
+
+# =========================================================
+# VARIAS UNIDADES
+# =========================================================
+
+if len(resultado) > 1:
+
+    opciones = []
+
+    for _, fila in resultado.iterrows():
+
+        placa_opcion = valor_visible(
+            fila.get("PLACA")
+        )
+
+        serie_opcion = valor_visible(
+            fila.get("SERIE")
+        )
+
+        opciones.append(
+            f"{placa_opcion} | {serie_opcion}"
+        )
+
+    seleccion = st.selectbox(
+        "Selecciona la unidad",
+        opciones
+    )
+
+    indice_seleccionado = opciones.index(
+        seleccion
+    )
+
+    unidad = resultado.iloc[
+        indice_seleccionado
+    ]
+
+else:
+
+    unidad = resultado.iloc[0]
+
+
+# =========================================================
+# DATOS PRINCIPALES
+# =========================================================
+
+placa = valor_visible(
+    unidad.get("PLACA")
+)
+
+serie = valor_visible(
+    unidad.get("SERIE")
+)
+
+
+st.markdown(
+    f"""
+    <div class="titulo-seccion">
+        🚗 {placa} | {serie}
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+
+# =========================================================
+# INFORMACIÓN GENERAL
+# =========================================================
+
+st.markdown(
+    '<div class="titulo-seccion">📋 Información general</div>',
+    unsafe_allow_html=True
+)
+
+col1, col2, col3, col4 = st.columns(4)
+
+
+with col1:
+
+    st.markdown(
+        f"""
+        <div class="tarjeta">
+            <div class="campo">LÍNEA</div>
+            <div class="valor">
+                {valor_visible(unidad.get("LINEA"))}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
 
-def limpiar_columnas(df):
-    df = df.copy()
-    df.columns = df.columns.astype(str).str.replace("\t", "", regex=False).str.strip()
-    return df
+with col2:
+
+    st.markdown(
+        f"""
+        <div class="tarjeta">
+            <div class="campo">MODELO</div>
+            <div class="valor">
+                {valor_visible(unidad.get("MODELO"))}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 
-def valor_visible(valor):
-    if pd.isna(valor):
-        return "Sin información"
-    texto = str(valor).strip()
-    return texto if texto else "Sin información"
+with col3:
+
+    st.markdown(
+        f"""
+        <div class="tarjeta">
+            <div class="campo">ESTATUS</div>
+            <div class="valor">
+                {valor_visible(unidad.get("ESTATUS"))}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 
-def dias_transcurridos(fecha):
-    fecha = pd.to_datetime(fecha, errors="coerce")
-    if pd.isna(fecha):
-        return pd.NA
-    return max((pd.Timestamp(date.today()) - fecha.normalize()).days, 0)
+with col4:
 
-
-def preparar_claves(df, columna_serie, columna_placa):
-    df = df.copy()
-    if columna_serie in df.columns:
-        df["_SERIE_CLAVE"] = limpiar_texto(df[columna_serie])
-    else:
-        df["_SERIE_CLAVE"] = pd.NA
-    if columna_placa in df.columns:
-        df["_PLACA_CLAVE"] = limpiar_texto(df[columna_placa])
-    else:
-        df["_PLACA_CLAVE"] = pd.NA
-    return df
-
-
-@st.cache_data
-def cargar_unidades():
-    df = limpiar_columnas(pd.read_excel(ARCHIVO_MAESTRO, sheet_name="Ziga"))
-    return preparar_claves(df, "Serie", "Placas")
-
-
-@st.cache_data
-def cargar_total_pisos():
-    """Cuenta todos los registros de CENTENARIO y LALA, antes de deduplicar."""
-    total = 0
-    for hoja in HOJAS_PISOS:
-        piso = pd.read_excel(ARCHIVO_PISOS, sheet_name=hoja, header=1, usecols=[0])
-        total += len(piso)
-    return total
-
-
-@st.cache_data
-def cargar_pisos():
-    """Une CENTENARIO y LALA; conserva el registro con más días por unidad para las búsquedas."""
-    registros = []
-    for hoja in HOJAS_PISOS:
-        piso = limpiar_columnas(pd.read_excel(ARCHIVO_PISOS, sheet_name=hoja, header=1))
-        piso = preparar_claves(piso, "SERIE", "PLACA")
-        piso["PISO_REGISTRO"] = hoja
-        if "DÍAS EN PISO" not in piso.columns:
-            piso["DÍAS EN PISO"] = pd.NA
-        piso["DÍAS EN PISO"] = pd.to_numeric(piso["DÍAS EN PISO"], errors="coerce")
-        if "FECHA DE INGRESO" in piso.columns:
-            piso["FECHA DE INGRESO"] = pd.to_datetime(piso["FECHA DE INGRESO"], errors="coerce")
-        registros.append(piso)
-
-    pisos = pd.concat(registros, ignore_index=True, sort=False)
-    pisos = pisos[pisos["_SERIE_CLAVE"].notna() | pisos["_PLACA_CLAVE"].notna()].copy()
-    pisos["_CLAVE_UNIDAD"] = pisos["_SERIE_CLAVE"]
-    sin_serie = pisos["_CLAVE_UNIDAD"].isna()
-    pisos.loc[sin_serie, "_CLAVE_UNIDAD"] = "PLACA:" + pisos.loc[sin_serie, "_PLACA_CLAVE"].astype("string")
-    pisos["_ORDEN_ORIGINAL"] = range(len(pisos))
-    pisos = pisos.sort_values(["DÍAS EN PISO", "_ORDEN_ORIGINAL"], ascending=[False, True], na_position="last")
-    return pisos.drop_duplicates("_CLAVE_UNIDAD", keep="first")
-
-
-@st.cache_data
-def cargar_procesos():
-    procesos = {}
-
-    # Ziga Talleres
-    df = limpiar_columnas(pd.read_excel(ARCHIVO_MAESTRO, sheet_name="Ziga Talleres"))
-    df = preparar_claves(df, "No. de serie", "No. de placa")
-    df["Estatus"] = df["Estatus"].astype("string").str.strip()
-    df = df[df["Estatus"].isin(ESTATUS_TALLERES_ABIERTOS)].copy()
-    df["DÍAS ABIERTOS"] = df["Fecha de ingreso"].apply(dias_transcurridos)
-    df["ÁREA CON RESGUARDO"] = df["Área del taller activa"].astype("string").str.contains("Resguardo", case=False, na=False)
-    procesos["Ziga Talleres"] = df
-
-    # Mantenimientos
-    df = limpiar_columnas(pd.read_excel(ARCHIVO_MAESTRO, sheet_name="Mantenimientos"))
-    df = preparar_claves(df, "NO. SERIE", "PLACAS")
-    df["ESTATUS DEL FOLIO"] = df["ESTATUS DEL FOLIO"].astype("string").str.strip()
-    df = df[df["ESTATUS DEL FOLIO"].isin(ESTATUS_MANTENIMIENTOS_ABIERTOS)].copy()
-    df["DÍAS ABIERTOS"] = df["FECHA DE CREACION DEL FOLIO"].apply(dias_transcurridos)
-    procesos["Mantenimientos"] = df
-
-    # Gestorías
-    df = limpiar_columnas(pd.read_excel(ARCHIVO_MAESTRO, sheet_name="Gestorías"))
-    df = preparar_claves(df, "Serie del Vehículo", "Placas del vehículo")
-    df["Estado de atención"] = df["Estado de atención"].astype("string").str.strip()
-    df = df[df["Estado de atención"].isin(ESTATUS_GESTORIAS_ABIERTOS)].copy()
-    df["DÍAS ABIERTOS"] = df["Fecha de creación"].apply(dias_transcurridos)
-    df["CONCEPTO GESTORÍA/TRÁMITES"] = df["Conceptos"].astype("string").str.contains(r"Gestoria|Tramites", case=False, na=False, regex=True)
-    procesos["Gestorías"] = df
-
-    # Siniestros: todos los registros cuyo STATUS sea Abierto.
-    df = limpiar_columnas(pd.read_excel(ARCHIVO_MAESTRO, sheet_name="Siniestros"))
-    df = preparar_claves(df, "SERIE", "PLACAS")
-    df["STATUS"] = df["STATUS"].astype("string").str.strip()
-    df = df[df["STATUS"].str.casefold().eq("abierto")].copy()
-    df["DÍAS ABIERTOS"] = df["FECHA APERTURA"].apply(dias_transcurridos)
-    procesos["Siniestros"] = df
-
-    return procesos
-
-
-def buscar_registros_unidad(df_proceso, serie, placa):
-    """Busca por serie primero y recurre a placa si no encuentra coincidencias."""
-    if df_proceso.empty:
-        return df_proceso.copy()
-    if pd.notna(serie):
-        encontrados = df_proceso[df_proceso["_SERIE_CLAVE"].eq(serie)]
-        if not encontrados.empty:
-            return encontrados.copy()
-    if pd.notna(placa):
-        return df_proceso[df_proceso["_PLACA_CLAVE"].eq(placa)].copy()
-    return df_proceso.iloc[0:0].copy()
-
-
-def mostrar_proceso(titulo, registros, columnas, columna_resaltado=None):
-    st.markdown(f"**{titulo}** — {len(registros)} registro(s) abierto(s)")
-    if registros.empty:
-        st.caption("Sin procesos abiertos relacionados con esta unidad.")
-        return
-    columnas = [c for c in columnas if c in registros.columns]
-    vista = registros[columnas].copy()
-    if columna_resaltado and columna_resaltado in registros.columns:
-        vista["ALERTA"] = registros[columna_resaltado].map(
-            lambda x: "⚠️ Revisar" if bool(x) else ""
-        ).values
-    st.dataframe(vista, use_container_width=True, hide_index=True)
+    st.markdown(
+        f"""
+        <div class="tarjeta">
+            <div class="campo">SUBESTATUS</div>
+            <div class="valor">
+                {valor_visible(unidad.get("SUBESTATUS"))}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 
 # =========================================================
-# INTERFAZ
+# DATOS DE LA UNIDAD
 # =========================================================
-st.title("CASANOVA | CONTROL DE UNIDADES")
-st.caption("CORPORATIVO / LEASING")
-st.divider()
 
-try:
-    df = cargar_unidades()
+st.markdown(
+    '<div class="titulo-seccion">🚘 Datos de la unidad</div>',
+    unsafe_allow_html=True
+)
 
-    try:
-        pisos = cargar_pisos()
-        total_pisos = cargar_total_pisos()
-        error_pisos = None
-    except Exception as error:
-        pisos = pd.DataFrame()
-        total_pisos = None
-        error_pisos = error
 
-    try:
-        procesos = cargar_procesos()
-        error_procesos = None
-    except Exception as error:
-        procesos = {}
-        error_procesos = error
+col1, col2, col3 = st.columns(3)
 
-    st.subheader("Consulta de unidades")
-    busqueda = st.text_input("Buscar por placas o número de serie", placeholder="Escribe las placas o la serie...")
 
-    if busqueda:
-        criterio = busqueda.strip().upper()
-        resultado = df[
-            df["_PLACA_CLAVE"].fillna("").str.contains(criterio, case=False, na=False, regex=False)
-            | df["_SERIE_CLAVE"].fillna("").str.contains(criterio, case=False, na=False, regex=False)
-        ].copy()
+with col1:
 
-        if resultado.empty:
-            st.warning("No se encontraron unidades en el archivo maestro.")
-        else:
-            st.success(f"Unidades encontradas en el maestro: {len(resultado):,}")
-            columnas_maestro = [
-                "Marca", "Línea", "Versión", "Modelo", "Serie", "Placas",
-                "Unidad de negocio", "Nombre del cliente", "Estatus", "Substatus"
-            ]
-            columnas_maestro = [c for c in columnas_maestro if c in resultado.columns]
+    st.markdown(
+        f"""
+        <div class="tarjeta">
+            <div class="campo">NOMBRE DEL CLIENTE</div>
+            <div class="valor">
+                {valor_visible(unidad.get("NOMBRE DEL CLIENTE"))}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-            for _, unidad in resultado.iterrows():
-                serie = unidad.get("_SERIE_CLAVE", pd.NA)
-                placa = unidad.get("_PLACA_CLAVE", pd.NA)
-                placa_titulo = valor_visible(unidad.get("Placas", ""))
-                serie_titulo = valor_visible(unidad.get("Serie", ""))
-                st.markdown("---")
-                st.markdown(f"### 🚗 Placas: {placa_titulo} | Serie: {serie_titulo}")
-                st.dataframe(pd.DataFrame([unidad[columnas_maestro]]), use_container_width=True, hide_index=True)
 
-                # Información de pisos
-                st.markdown("#### 📍 Pisos CENTENARIO / LALA")
-                registro_piso = pd.DataFrame()
-                if not pisos.empty:
-                    if pd.notna(serie):
-                        registro_piso = pisos[pisos["_SERIE_CLAVE"].eq(serie)]
-                    if registro_piso.empty and pd.notna(placa):
-                        registro_piso = pisos[pisos["_PLACA_CLAVE"].eq(placa)]
-                if registro_piso.empty:
-                    st.info("Sin registro en pisos.")
-                else:
-                    columnas_piso = [
-                        "PLACA", "SERIE", "PISO_REGISTRO", "ALMACÉN", "FECHA DE INGRESO",
-                        "DÍAS EN PISO", "OBSERVACIONES", "Siniestro", "Talleres y Mantenimientos",
-                        "Gestoria", "Estatus poliza"
-                    ]
-                    columnas_piso = [c for c in columnas_piso if c in registro_piso.columns]
-                    st.dataframe(registro_piso[columnas_piso], use_container_width=True, hide_index=True)
+with col2:
 
-                # Procesos relacionados con la unidad
-                st.markdown("#### 🧾 Procesos abiertos relacionados")
-                if error_procesos is not None:
-                    st.warning("No se pudieron cargar las pestañas de procesos.")
-                    st.code(str(error_procesos))
-                else:
-                    con_proceso = st.container()
-                    with con_proceso:
-                        talleres = buscar_registros_unidad(procesos["Ziga Talleres"], serie, placa)
-                        mostrar_proceso(
-                            "Ziga Talleres", talleres,
-                            ["Folio", "Estatus", "Área del taller activa", "Fecha de ingreso", "DÍAS ABIERTOS"],
-                            "ÁREA CON RESGUARDO"
-                        )
-                        if not talleres.empty and talleres["ÁREA CON RESGUARDO"].any():
-                            st.warning("Esta unidad tiene un área de taller que contiene ‘Resguardo’. Revisar el registro.")
+    st.markdown(
+        f"""
+        <div class="tarjeta">
+            <div class="campo">ALMACÉN</div>
+            <div class="valor">
+                {valor_visible(unidad.get("ALMACÉN"))}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-                        mantenimientos = buscar_registros_unidad(procesos["Mantenimientos"], serie, placa)
-                        mostrar_proceso(
-                            "Mantenimientos", mantenimientos,
-                            ["FOLIO", "ESTATUS DEL FOLIO", "PROVEEDOR", "TIPO DE SERVICIO",
-                             "DESCRIPCIÓN DEL SERVICIO", "FECHA DE CREACION DEL FOLIO", "DÍAS ABIERTOS"]
-                        )
 
-                        gestorias = buscar_registros_unidad(procesos["Gestorías"], serie, placa)
-                        mostrar_proceso(
-                            "Gestorías", gestorias,
-                            ["Folio", "Estado de atención", "Conceptos", "Fecha de creación", "DÍAS ABIERTOS"],
-                            "CONCEPTO GESTORÍA/TRÁMITES"
-                        )
-                        if not gestorias.empty and gestorias["CONCEPTO GESTORÍA/TRÁMITES"].any():
-                            st.info("El concepto de gestoría contiene ‘Gestoria’ o ‘Tramites’.")
+with col3:
 
-                        siniestros = buscar_registros_unidad(procesos["Siniestros"], serie, placa)
-                        mostrar_proceso(
-                            "Siniestros", siniestros,
-                            ["FOLIO", "STATUS", "ULTIMO COMENTARIO", "FECHA APERTURA", "DÍAS ABIERTOS"]
-                        )
+    st.markdown(
+        f"""
+        <div class="tarjeta">
+            <div class="campo">UNIDAD DE NEGOCIO</div>
+            <div class="valor">
+                {valor_visible(unidad.get("UNIDAD NEGOCIO"))}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-    if error_pisos is not None:
-        st.warning("No se pudo cargar la información de CENTENARIO y LALA. El maestro sigue disponible.")
-        st.code(str(error_pisos))
 
-    if error_procesos is not None:
-        st.warning("No se pudieron cargar las pestañas de procesos. Verifica que los nombres y el archivo sean correctos.")
-        st.code(str(error_procesos))
+col1, col2, col3 = st.columns(3)
 
-    st.divider()
-    st.subheader("Panel general")
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        if total_pisos is not None:
-            st.metric("Total de unidades en pisos", f"{total_pisos:,}")
-        else:
-            st.metric("Total de unidades en pisos", "N/D")
-    with col2:
-        if "Estatus" in df.columns:
-            estatus = df["Estatus"].astype("string").str.strip()
-            st.metric("Rentadas", f"{estatus.eq('Rentado').sum():,}")
-        else:
-            st.metric("Rentadas", "N/D")
-    with col3:
-        if "Substatus" in df.columns:
-            substatus = df["Substatus"].astype("string").str.strip()
-            st.metric("En reparación", f"{substatus.eq('En reparación').sum():,}")
-        else:
-            st.metric("En reparación", "N/D")
-    with col4:
-        st.metric("Con información de serie", f"{df['Serie'].notna().sum():,}" if "Serie" in df.columns else "N/D")
 
-    if error_procesos is None:
-        st.divider()
-        st.subheader("Resumen de procesos abiertos")
-        resumen = st.columns(4)
-        nombres = ["Ziga Talleres", "Mantenimientos", "Gestorías", "Siniestros"]
-        for col, nombre in zip(resumen, nombres):
-            with col:
-                st.metric(nombre, f"{len(procesos[nombre]):,}")
+with col1:
 
-except Exception as error:
-    st.error("No se pudo cargar el archivo maestro.")
-    st.write("Verifica que la unidad Y: esté disponible y que el archivo no haya cambiado de ubicación.")
-    st.code(str(error))
+    st.markdown(
+        f"""
+        <div class="tarjeta">
+            <div class="campo">GPS</div>
+            <div class="valor">
+                {valor_visible(unidad.get("GPS"))}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+with col2:
+
+    st.markdown(
+        f"""
+        <div class="tarjeta">
+            <div class="campo">PLATAFORMA</div>
+            <div class="valor">
+                {valor_visible(unidad.get("PLATAFORMA"))}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+with col3:
+
+    st.markdown(
+        f"""
+        <div class="tarjeta">
+            <div class="campo">¿REPORTA?</div>
+            <div class="valor">
+                {valor_visible(unidad.get("¿REPORTA?"))}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+# =========================================================
+# PISO
+# =========================================================
+
+st.markdown(
+    '<div class="separador"></div>',
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    '<div class="titulo-seccion">🏭 Piso</div>',
+    unsafe_allow_html=True
+)
+
+
+dias_piso = dias_visible(
+    unidad.get("DÍAS EN PISO")
+)
+
+
+st.markdown(
+    f"""
+    <div class="tarjeta-piso">
+        <div class="dias-label">
+            DÍAS EN PISO
+        </div>
+        <div class="dias-grande">
+            {dias_piso}
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+
+# =========================================================
+# GESTORÍA
+# =========================================================
+
+st.markdown(
+    '<div class="separador"></div>',
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    '<div class="titulo-seccion">📋 Gestoría</div>',
+    unsafe_allow_html=True
+)
+
+
+folio_gestoria = unidad.get(
+    "Gestorías1.Folio"
+)
+
+gestoria = unidad.get(
+    "Gestoria"
+)
+
+
+tiene_gestoria = (
+    tiene_informacion(folio_gestoria)
+    or
+    tiene_informacion(gestoria)
+)
+
+
+if tiene_gestoria:
+
+    st.markdown(
+        """
+        <div class="estado-si">
+            ✓ SÍ TIENE GESTORÍA
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+else:
+
+    st.markdown(
+        """
+        <div class="estado-no">
+            — SIN GESTORÍA
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+col1, col2, col3 = st.columns(3)
+
+
+with col1:
+
+    st.markdown(
+        f"""
+        <div class="tarjeta">
+            <div class="campo">FOLIO</div>
+            <div class="valor">
+                {valor_visible(unidad.get("Gestorías1.Folio"))}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+with col2:
+
+    st.markdown(
+        f"""
+        <div class="tarjeta">
+            <div class="campo">ESTATUS DE PÓLIZA</div>
+            <div class="valor">
+                {valor_visible(unidad.get("Estatus poliza"))}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+with col3:
+
+    st.markdown(
+        f"""
+        <div class="tarjeta">
+            <div class="campo">FECHA DE CREACIÓN</div>
+            <div class="valor">
+                {fecha_visible(unidad.get("Gestorías1.Fecha de creación"))}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+col1, col2, col3 = st.columns(3)
+
+
+with col1:
+
+    st.markdown(
+        f"""
+        <div class="tarjeta">
+            <div class="campo">ESTADO DE ATENCIÓN</div>
+            <div class="valor">
+                {valor_visible(unidad.get("Gestorías1.Estado de atención"))}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+with col2:
+
+    st.markdown(
+        f"""
+        <div class="tarjeta">
+            <div class="campo">DÍAS</div>
+            <div class="valor">
+                {valor_visible(unidad.get("Gestorías1.Personalizado"))}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+with col3:
+
+    st.markdown(
+        f"""
+        <div class="tarjeta">
+            <div class="campo">CONCEPTOS</div>
+            <div class="valor">
+                {valor_visible(unidad.get("Gestorías1.Conceptos"))}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+# =========================================================
+# MANTENIMIENTO
+# =========================================================
+
+st.markdown(
+    '<div class="separador"></div>',
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    '<div class="titulo-seccion">🔧 Mantenimiento</div>',
+    unsafe_allow_html=True
+)
+
+
+folio_mantenimiento = unidad.get(
+    "Mantenimiento.FOLIO"
+)
+
+
+if tiene_informacion(folio_mantenimiento):
+
+    st.markdown(
+        """
+        <div class="estado-si">
+            ✓ TIENE MANTENIMIENTO
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+else:
+
+    st.markdown(
+        """
+        <div class="estado-no">
+            — SIN MANTENIMIENTO
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+col1, col2, col3 = st.columns(3)
+
+
+with col1:
+
+    st.markdown(
+        f"""
+        <div class="tarjeta">
+            <div class="campo">FOLIO</div>
+            <div class="valor">
+                {valor_visible(unidad.get("Mantenimiento.FOLIO"))}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+with col2:
+
+    st.markdown(
+        f"""
+        <div class="tarjeta">
+            <div class="campo">FECHA DE CREACIÓN</div>
+            <div class="valor">
+                {fecha_visible(unidad.get("Mantenimiento.FECHA DE CREACION DEL FOLIO"))}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+with col3:
+
+    st.markdown(
+        f"""
+        <div class="tarjeta">
+            <div class="campo">ESTATUS</div>
+            <div class="valor">
+                {valor_visible(unidad.get("Mantenimiento.ESTATUS DEL FOLIO"))}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+col1, col2 = st.columns(2)
+
+
+with col1:
+
+    st.markdown(
+        f"""
+        <div class="tarjeta">
+            <div class="campo">PROVEEDOR</div>
+            <div class="valor">
+                {valor_visible(unidad.get("Mantenimiento.PROVEEDOR"))}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+with col2:
+
+    st.markdown(
+        f"""
+        <div class="tarjeta">
+            <div class="campo">DÍAS</div>
+            <div class="valor">
+                {valor_visible(unidad.get("Mantenimiento.dias"))}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+# =========================================================
+# ZIGA TALLERES
+# =========================================================
+
+st.markdown(
+    '<div class="separador"></div>',
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    '<div class="titulo-seccion">🛠️ Ziga Talleres</div>',
+    unsafe_allow_html=True
+)
+
+
+folio_ziga = unidad.get(
+    "Ziga_Talleres.Folio"
+)
+
+
+if tiene_informacion(folio_ziga):
+
+    st.markdown(
+        """
+        <div class="estado-si">
+            ✓ TIENE REGISTRO EN ZIGA TALLERES
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+else:
+
+    st.markdown(
+        """
+        <div class="estado-no">
+            — SIN REGISTRO EN ZIGA TALLERES
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+col1, col2, col3 = st.columns(3)
+
+
+with col1:
+
+    st.markdown(
+        f"""
+        <div class="tarjeta">
+            <div class="campo">FOLIO</div>
+            <div class="valor">
+                {valor_visible(unidad.get("Ziga_Talleres.Folio"))}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+with col2:
+
+    st.markdown(
+        f"""
+        <div class="tarjeta">
+            <div class="campo">ESTATUS</div>
+            <div class="valor">
+                {valor_visible(unidad.get("Ziga_Talleres.Estatus"))}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+with col3:
+
+    st.markdown(
+        f"""
+        <div class="tarjeta">
+            <div class="campo">ÁREA DEL TALLER ACTIVA</div>
+            <div class="valor">
+                {valor_visible(unidad.get("Ziga_Talleres.Área del taller activa"))}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+col1, col2 = st.columns(2)
+
+
+with col1:
+
+    st.markdown(
+        f"""
+        <div class="tarjeta">
+            <div class="campo">FECHA DE INGRESO</div>
+            <div class="valor">
+                {fecha_visible(unidad.get("Ziga_Talleres.Fecha de ingreso"))}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+with col2:
+
+    st.markdown(
+        f"""
+        <div class="tarjeta">
+            <div class="campo">DÍAS</div>
+            <div class="valor">
+                {valor_visible(unidad.get("Ziga_Talleres.dias"))}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+# =========================================================
+# PIE
+# =========================================================
+
+st.markdown(
+    '<div class="separador"></div>',
+    unsafe_allow_html=True
+)
+
+st.caption(
+    "Casanova | Control de Unidades"
+)
