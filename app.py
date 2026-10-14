@@ -16,23 +16,23 @@ st.set_page_config(
 
 # =========================================================
 # ARCHIVO BASE
+# IMPORTANTE:
+# El Excel está en el mismo repositorio que app.py
 # =========================================================
 
-ARCHIVO_BASE = Path(
-    r"C:\Users\epacheco\Music\Nuevo proyecto\concentrado.xlsx"
-)
+ARCHIVO_BASE = Path("concentrado.xlsx")
 
 HOJA_BASE = "concentrado"
 
 
 # =========================================================
-# COLORES CASANOVA
+# COLORES
 # =========================================================
 
 AZUL_MARINO = "#213769"
 AZUL_CASANOVA = "#004876"
 AMARILLO = "#FFB700"
-GRIS_NIEBLA = "#EEF2F8"
+FONDO = "#F7F9FC"
 BLANCO = "#FFFFFF"
 
 
@@ -108,7 +108,6 @@ def dias_visible(valor):
         numero = float(valor)
 
         if numero.is_integer():
-
             return f"{int(numero):,} días"
 
         return f"{numero:,.1f} días"
@@ -126,12 +125,10 @@ st.markdown(
     f"""
     <style>
 
-    /* Fondo general */
     .stApp {{
-        background-color: #F7F9FC;
+        background-color: {FONDO};
     }}
 
-    /* Título */
     .titulo-principal {{
         color: {AZUL_MARINO};
         font-size: 30px;
@@ -145,7 +142,6 @@ st.markdown(
         margin-bottom: 20px;
     }}
 
-    /* Títulos de sección */
     .titulo-seccion {{
         color: {AZUL_MARINO};
         font-size: 21px;
@@ -154,7 +150,6 @@ st.markdown(
         margin-bottom: 12px;
     }}
 
-    /* Tarjetas */
     .tarjeta {{
         background: {BLANCO};
         border: 1px solid #D8E1EF;
@@ -165,15 +160,6 @@ st.markdown(
         margin-bottom: 12px;
     }}
 
-    .tarjeta-azul {{
-        background: {AZUL_CASANOVA};
-        border: none;
-        color: white;
-        border-radius: 14px;
-        padding: 18px;
-        box-shadow: 0 3px 10px rgba(0,72,118,0.18);
-    }}
-
     .tarjeta-piso {{
         background: {BLANCO};
         border: 2px solid {AMARILLO};
@@ -181,41 +167,9 @@ st.markdown(
         padding: 20px;
         text-align: center;
         box-shadow: 0 3px 10px rgba(255,183,0,0.12);
+        margin-bottom: 15px;
     }}
 
-    .campo {{
-        color: #64748B;
-        font-size: 12px;
-        font-weight: 600;
-        margin-bottom: 5px;
-    }}
-
-    .valor {{
-        color: #172033;
-        font-size: 17px;
-        font-weight: 700;
-        word-break: break-word;
-    }}
-
-    .valor-blanco {{
-        color: white;
-        font-size: 17px;
-        font-weight: 700;
-    }}
-
-    .dias-grande {{
-        color: {AZUL_MARINO};
-        font-size: 34px;
-        font-weight: 800;
-    }}
-
-    .dias-label {{
-        color: #64748B;
-        font-size: 13px;
-        font-weight: 600;
-    }}
-
-    /* Tarjeta total */
     .total-piso {{
         background: linear-gradient(
             135deg,
@@ -241,7 +195,32 @@ st.markdown(
         margin-top: 4px;
     }}
 
-    /* Estado */
+    .campo {{
+        color: #64748B;
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 5px;
+    }}
+
+    .valor {{
+        color: #172033;
+        font-size: 17px;
+        font-weight: 700;
+        word-break: break-word;
+    }}
+
+    .dias-grande {{
+        color: {AZUL_MARINO};
+        font-size: 34px;
+        font-weight: 800;
+    }}
+
+    .dias-label {{
+        color: #64748B;
+        font-size: 13px;
+        font-weight: 600;
+    }}
+
     .estado-si {{
         background: #EAF8F0;
         color: #198754;
@@ -262,17 +241,11 @@ st.markdown(
         margin-bottom: 12px;
     }}
 
-    /* Línea divisoria */
     .separador {{
         height: 2px;
         background: #DCE4F0;
         margin: 28px 0;
         border-radius: 5px;
-    }}
-
-    /* Search */
-    div[data-baseweb="input"] {{
-        border-radius: 10px;
     }}
 
     </style>
@@ -310,8 +283,8 @@ except Exception as e:
         "No se pudo cargar el archivo concentrado.xlsx"
     )
 
-    st.code(
-        r"C:\Users\epacheco\Music\Nuevo proyecto\concentrado.xlsx"
+    st.write(
+        "Verifica que concentrado.xlsx esté en el mismo repositorio que app.py."
     )
 
     st.code(str(e))
@@ -344,6 +317,7 @@ st.markdown(
         <div class="total-piso-titulo">
             🏭 TOTAL DE UNIDADES EN PISO
         </div>
+
         <div class="total-piso-numero">
             {unidades_en_piso:,}
         </div>
@@ -707,6 +681,7 @@ st.markdown(
         <div class="dias-label">
             DÍAS EN PISO
         </div>
+
         <div class="dias-grande">
             {dias_piso}
         </div>
@@ -810,7 +785,11 @@ with col3:
         <div class="tarjeta">
             <div class="campo">FECHA DE CREACIÓN</div>
             <div class="valor">
-                {fecha_visible(unidad.get("Gestorías1.Fecha de creación"))}
+                {fecha_visible(
+                    unidad.get(
+                        "Gestorías1.Fecha de creación"
+                    )
+                )}
             </div>
         </div>
         """,
@@ -828,7 +807,11 @@ with col1:
         <div class="tarjeta">
             <div class="campo">ESTADO DE ATENCIÓN</div>
             <div class="valor">
-                {valor_visible(unidad.get("Gestorías1.Estado de atención"))}
+                {valor_visible(
+                    unidad.get(
+                        "Gestorías1.Estado de atención"
+                    )
+                )}
             </div>
         </div>
         """,
@@ -843,7 +826,11 @@ with col2:
         <div class="tarjeta">
             <div class="campo">DÍAS</div>
             <div class="valor">
-                {valor_visible(unidad.get("Gestorías1.Personalizado"))}
+                {valor_visible(
+                    unidad.get(
+                        "Gestorías1.Personalizado"
+                    )
+                )}
             </div>
         </div>
         """,
@@ -858,7 +845,11 @@ with col3:
         <div class="tarjeta">
             <div class="campo">CONCEPTOS</div>
             <div class="valor">
-                {valor_visible(unidad.get("Gestorías1.Conceptos"))}
+                {valor_visible(
+                    unidad.get(
+                        "Gestorías1.Conceptos"
+                    )
+                )}
             </div>
         </div>
         """,
@@ -919,7 +910,11 @@ with col1:
         <div class="tarjeta">
             <div class="campo">FOLIO</div>
             <div class="valor">
-                {valor_visible(unidad.get("Mantenimiento.FOLIO"))}
+                {valor_visible(
+                    unidad.get(
+                        "Mantenimiento.FOLIO"
+                    )
+                )}
             </div>
         </div>
         """,
@@ -934,7 +929,11 @@ with col2:
         <div class="tarjeta">
             <div class="campo">FECHA DE CREACIÓN</div>
             <div class="valor">
-                {fecha_visible(unidad.get("Mantenimiento.FECHA DE CREACION DEL FOLIO"))}
+                {fecha_visible(
+                    unidad.get(
+                        "Mantenimiento.FECHA DE CREACION DEL FOLIO"
+                    )
+                )}
             </div>
         </div>
         """,
@@ -949,7 +948,11 @@ with col3:
         <div class="tarjeta">
             <div class="campo">ESTATUS</div>
             <div class="valor">
-                {valor_visible(unidad.get("Mantenimiento.ESTATUS DEL FOLIO"))}
+                {valor_visible(
+                    unidad.get(
+                        "Mantenimiento.ESTATUS DEL FOLIO"
+                    )
+                )}
             </div>
         </div>
         """,
@@ -967,7 +970,11 @@ with col1:
         <div class="tarjeta">
             <div class="campo">PROVEEDOR</div>
             <div class="valor">
-                {valor_visible(unidad.get("Mantenimiento.PROVEEDOR"))}
+                {valor_visible(
+                    unidad.get(
+                        "Mantenimiento.PROVEEDOR"
+                    )
+                )}
             </div>
         </div>
         """,
@@ -982,7 +989,11 @@ with col2:
         <div class="tarjeta">
             <div class="campo">DÍAS</div>
             <div class="valor">
-                {valor_visible(unidad.get("Mantenimiento.dias"))}
+                {valor_visible(
+                    unidad.get(
+                        "Mantenimiento.dias"
+                    )
+                )}
             </div>
         </div>
         """,
@@ -1043,7 +1054,11 @@ with col1:
         <div class="tarjeta">
             <div class="campo">FOLIO</div>
             <div class="valor">
-                {valor_visible(unidad.get("Ziga_Talleres.Folio"))}
+                {valor_visible(
+                    unidad.get(
+                        "Ziga_Talleres.Folio"
+                    )
+                )}
             </div>
         </div>
         """,
@@ -1058,7 +1073,11 @@ with col2:
         <div class="tarjeta">
             <div class="campo">ESTATUS</div>
             <div class="valor">
-                {valor_visible(unidad.get("Ziga_Talleres.Estatus"))}
+                {valor_visible(
+                    unidad.get(
+                        "Ziga_Talleres.Estatus"
+                    )
+                )}
             </div>
         </div>
         """,
@@ -1073,7 +1092,11 @@ with col3:
         <div class="tarjeta">
             <div class="campo">ÁREA DEL TALLER ACTIVA</div>
             <div class="valor">
-                {valor_visible(unidad.get("Ziga_Talleres.Área del taller activa"))}
+                {valor_visible(
+                    unidad.get(
+                        "Ziga_Talleres.Área del taller activa"
+                    )
+                )}
             </div>
         </div>
         """,
@@ -1091,7 +1114,11 @@ with col1:
         <div class="tarjeta">
             <div class="campo">FECHA DE INGRESO</div>
             <div class="valor">
-                {fecha_visible(unidad.get("Ziga_Talleres.Fecha de ingreso"))}
+                {fecha_visible(
+                    unidad.get(
+                        "Ziga_Talleres.Fecha de ingreso"
+                    )
+                )}
             </div>
         </div>
         """,
@@ -1106,7 +1133,11 @@ with col2:
         <div class="tarjeta">
             <div class="campo">DÍAS</div>
             <div class="valor">
-                {valor_visible(unidad.get("Ziga_Talleres.dias"))}
+                {valor_visible(
+                    unidad.get(
+                        "Ziga_Talleres.dias"
+                    )
+                )}
             </div>
         </div>
         """,
