@@ -1,8 +1,6 @@
 import streamlit as st
 import pandas as pd
 from pathlib import Path
-from textwrap import dedent
-import re
 
 
 # =========================================================
@@ -23,6 +21,8 @@ st.set_page_config(
 ARCHIVO_BASE = Path("concentrado.xlsx")
 
 HOJA_BASE = "concentrado"
+
+# La hoja donde está la tabla Pendiente_refaccionesa
 HOJA_REFACCIONES = "Refacciones"
 
 
@@ -59,9 +59,8 @@ def verificar_login(usuario, password):
 def mostrar_login():
 
     st.markdown(
-        dedent(f"""
+        f"""
         <style>
-
         .login-box {{
             max-width: 430px;
             margin: 70px auto 20px auto;
@@ -89,30 +88,19 @@ def mostrar_login():
             font-size: 14px;
             margin-top: 5px;
         }}
-
         </style>
-        """),
+        """,
         unsafe_allow_html=True
     )
 
     st.markdown(
-        dedent("""
+        """
         <div class="login-box">
-
-            <div class="login-icon">
-                🚗
-            </div>
-
-            <div class="login-title">
-                CASANOVA
-            </div>
-
-            <div class="login-subtitle">
-                Control de Unidades
-            </div>
-
+            <div class="login-icon">🚗</div>
+            <div class="login-title">CASANOVA</div>
+            <div class="login-subtitle">Control de Unidades</div>
         </div>
-        """),
+        """,
         unsafe_allow_html=True
     )
 
@@ -139,10 +127,7 @@ def mostrar_login():
 
         if iniciar:
 
-            if verificar_login(
-                usuario,
-                password
-            ):
+            if verificar_login(usuario, password):
 
                 st.session_state["autenticado"] = True
 
@@ -206,46 +191,6 @@ def normalizar_columnas(df):
 
 
 # =========================================================
-# NORMALIZAR TEXTO PARA CRUCES
-# =========================================================
-
-def normalizar_clave(valor):
-
-    if valor is None:
-        return ""
-
-    try:
-
-        if pd.isna(valor):
-            return ""
-
-    except Exception:
-
-        pass
-
-    texto = str(valor).strip().upper()
-
-    if texto in [
-        "",
-        "NAN",
-        "NONE",
-        "NULL",
-        "NAT"
-    ]:
-
-        return ""
-
-    # Quitar espacios y caracteres especiales
-    texto = re.sub(
-        r"[^A-Z0-9]",
-        "",
-        texto
-    )
-
-    return texto
-
-
-# =========================================================
 # CARGAR CONCENTRADO
 # =========================================================
 
@@ -269,9 +214,45 @@ def cargar_refacciones():
 
     try:
 
+        archivo = pd.ExcelFile(
+            ARCHIVO_BASE
+        )
+
+        hojas = archivo.sheet_names
+
+        hoja_encontrada = None
+
+        # Buscar hoja Refacciones sin importar mayúsculas
+        for hoja in hojas:
+
+            if str(hoja).strip().lower() == "refacciones":
+
+                hoja_encontrada = hoja
+                break
+
+        # Si no encuentra Refacciones,
+        # también intenta Pendiente_refaccionesa
+        if hoja_encontrada is None:
+
+            for hoja in hojas:
+
+                if (
+                    str(hoja)
+                    .strip()
+                    .lower()
+                    == "pendiente_refaccionesa"
+                ):
+
+                    hoja_encontrada = hoja
+                    break
+
+        if hoja_encontrada is None:
+
+            return pd.DataFrame()
+
         df = pd.read_excel(
             ARCHIVO_BASE,
-            sheet_name=HOJA_REFACCIONES
+            sheet_name=hoja_encontrada
         )
 
         return normalizar_columnas(df)
@@ -328,6 +309,10 @@ def valor_visible(valor):
     return str(valor).strip()
 
 
+# =========================================================
+# NÚMERO ENTERO
+# =========================================================
+
 def numero_entero(valor):
 
     if not tiene_informacion(valor):
@@ -336,12 +321,23 @@ def numero_entero(valor):
 
     try:
 
-        return f"{int(float(valor)):,}"
+        numero = float(valor)
+
+        if numero.is_integer():
+
+            return str(int(numero))
+
+        return str(int(numero))
 
     except Exception:
 
         return valor_visible(valor)
 
+
+# =========================================================
+# MODELO
+# NO PONE COMAS
+# =========================================================
 
 def modelo_visible(valor):
 
@@ -357,12 +353,16 @@ def modelo_visible(valor):
 
             return str(int(numero))
 
-        return str(valor).strip()
-
     except Exception:
 
-        return str(valor).strip()
+        pass
 
+    return str(valor).strip()
+
+
+# =========================================================
+# FECHA
+# =========================================================
 
 def fecha_visible(valor):
 
@@ -390,16 +390,18 @@ def fecha_visible(valor):
         return valor_visible(valor)
 
 
+# =========================================================
+# TARJETA
+# =========================================================
+
 def tarjeta(campo, valor):
 
-    return dedent(
-        f"""
-        <div class="tarjeta">
-            <div class="campo">{campo}</div>
-            <div class="valor">{valor}</div>
-        </div>
-        """
-    )
+    return f"""
+    <div class="tarjeta">
+        <div class="campo">{campo}</div>
+        <div class="valor">{valor}</div>
+    </div>
+    """
 
 
 # =========================================================
@@ -407,183 +409,191 @@ def tarjeta(campo, valor):
 # =========================================================
 
 st.markdown(
-    dedent(
-        f"""
-        <style>
+    f"""
+    <style>
 
-        .stApp {{
-            background-color: #F7F9FC;
-        }}
+    .stApp {{
+        background-color: #F7F9FC;
+    }}
 
-        /* =================================================
-           TÍTULOS
-           ================================================= */
+    /* =====================================================
+       TÍTULOS
+       ===================================================== */
 
-        .titulo-principal {{
-            color: {AZUL_MARINO};
-            font-size: 30px;
-            font-weight: 800;
-            margin-bottom: 0px;
-        }}
+    .titulo-principal {{
+        color: {AZUL_MARINO};
+        font-size: 30px;
+        font-weight: 800;
+        margin-bottom: 0px;
+    }}
 
-        .subtitulo {{
-            color: #64748B;
-            font-size: 14px;
-            margin-bottom: 18px;
-        }}
+    .subtitulo {{
+        color: #64748B;
+        font-size: 14px;
+        margin-bottom: 18px;
+    }}
 
-        .titulo-seccion {{
-            color: {AZUL_MARINO};
-            font-size: 21px;
-            font-weight: 750;
-            margin-top: 22px;
-            margin-bottom: 12px;
-        }}
+    .titulo-seccion {{
+        color: {AZUL_MARINO};
+        font-size: 21px;
+        font-weight: 750;
+        margin-top: 22px;
+        margin-bottom: 12px;
+    }}
 
-        /* =================================================
-           TARJETAS
-           ================================================= */
 
-        .tarjeta {{
-            background: {BLANCO};
-            border: 1px solid #D8E1EF;
-            border-radius: 14px;
-            padding: 16px 18px;
-            min-height: 78px;
-            box-shadow: 0 2px 8px rgba(33,55,105,0.06);
-            margin-bottom: 12px;
-        }}
+    /* =====================================================
+       TARJETAS
+       ===================================================== */
 
-        .campo {{
-            color: #64748B;
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }}
+    .tarjeta {{
+        background: {BLANCO};
+        border: 1px solid #D8E1EF;
+        border-radius: 14px;
+        padding: 16px 18px;
+        min-height: 78px;
+        box-shadow: 0 2px 8px rgba(33,55,105,0.06);
+        margin-bottom: 12px;
+    }}
 
-        .valor {{
-            color: #172033;
-            font-size: 17px;
-            font-weight: 700;
-            word-break: break-word;
-        }}
+    .campo {{
+        color: #64748B;
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 5px;
+    }}
 
-        /* =================================================
-           TOTAL
-           ================================================= */
+    .valor {{
+        color: #172033;
+        font-size: 17px;
+        font-weight: 700;
+        word-break: break-word;
+    }}
 
-        .total-piso {{
-            background: linear-gradient(
-                135deg,
-                {AZUL_MARINO},
-                {AZUL_CASANOVA}
-            );
 
-            color: white;
-            border-radius: 16px;
-            padding: 20px 24px;
-            margin-bottom: 24px;
-            box-shadow: 0 4px 14px rgba(33,55,105,0.18);
-        }}
+    /* =====================================================
+       TOTAL
+       ===================================================== */
 
-        .total-titulo {{
-            font-size: 14px;
-            font-weight: 600;
-            opacity: 0.95;
-        }}
+    .total-piso {{
+        background: linear-gradient(
+            135deg,
+            {AZUL_MARINO},
+            {AZUL_CASANOVA}
+        );
 
-        .total-numero {{
-            font-size: 42px;
-            font-weight: 800;
-            margin-top: 2px;
-        }}
+        color: white;
+        border-radius: 16px;
+        padding: 20px 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 14px rgba(33,55,105,0.18);
+    }}
 
-        .total-desglose {{
-            font-size: 14px;
-            margin-top: 5px;
-        }}
+    .total-titulo {{
+        font-size: 14px;
+        font-weight: 600;
+        opacity: 0.95;
+    }}
 
-        /* =================================================
-           DÍAS EN PISO
-           ================================================= */
+    .total-numero {{
+        font-size: 42px;
+        font-weight: 800;
+        margin-top: 2px;
+    }}
 
-        .tarjeta-piso {{
-            background: white;
-            border: 2px solid {AMARILLO};
-            border-radius: 14px;
-            padding: 18px;
-            text-align: center;
-            box-shadow: 0 3px 10px rgba(255,183,0,0.12);
-            margin-top: 10px;
-            margin-bottom: 20px;
-        }}
+    .total-desglose {{
+        font-size: 14px;
+        margin-top: 5px;
+    }}
 
-        .dias-label {{
-            color: #64748B;
-            font-size: 13px;
-            font-weight: 600;
-        }}
 
-        .dias-grande {{
-            color: {AZUL_MARINO};
-            font-size: 32px;
-            font-weight: 800;
-            margin-top: 3px;
-        }}
+    /* =====================================================
+       DÍAS EN PISO
+       ===================================================== */
 
-        /* =================================================
-           REFACCIONES
-           ================================================= */
+    .tarjeta-piso {{
+        background: white;
+        border: 2px solid {AMARILLO};
+        border-radius: 14px;
+        padding: 18px;
+        text-align: center;
+        box-shadow: 0 3px 10px rgba(255,183,0,0.12);
+        margin-top: 12px;
+        margin-bottom: 20px;
+    }}
 
-        .refaccion-card {{
-            background: white;
-            border: 1px solid #D8E1EF;
-            border-left: 5px solid {AMARILLO};
-            border-radius: 13px;
-            padding: 16px 18px;
-            margin-bottom: 12px;
-            box-shadow: 0 2px 7px rgba(33,55,105,0.05);
-        }}
+    .dias-label {{
+        color: #64748B;
+        font-size: 13px;
+        font-weight: 600;
+    }}
 
-        .refaccion-folio {{
-            color: {AZUL_MARINO};
-            font-size: 15px;
-            font-weight: 800;
-            margin-bottom: 8px;
-        }}
+    .dias-grande {{
+        color: {AZUL_MARINO};
+        font-size: 32px;
+        font-weight: 800;
+        margin-top: 3px;
+    }}
 
-        .refaccion-actividad {{
-            color: #172033;
-            font-size: 15px;
-            font-weight: 600;
-            line-height: 1.5;
-        }}
 
-        .sin-folios {{
-            background: #F8FAFC;
-            border: 1px solid #D8E1EF;
-            border-radius: 14px;
-            padding: 18px;
-            text-align: center;
-            color: #64748B;
-            font-weight: 600;
-            margin-top: 25px;
-        }}
+    /* =====================================================
+       REFACCIONES
+       ===================================================== */
 
-        /* =================================================
-           SEPARADOR
-           ================================================= */
+    .refaccion-card {{
+        background: white;
+        border: 1px solid #D8E1EF;
+        border-left: 5px solid {AMARILLO};
+        border-radius: 13px;
+        padding: 16px 18px;
+        margin-bottom: 12px;
+        box-shadow: 0 2px 7px rgba(33,55,105,0.05);
+    }}
 
-        .separador {{
-            height: 2px;
-            background: #DCE4F0;
-            margin: 28px 0;
-            border-radius: 5px;
-        }}
+    .refaccion-folio {{
+        color: {AZUL_MARINO};
+        font-size: 15px;
+        font-weight: 800;
+        margin-bottom: 8px;
+    }}
 
-        </style>
-        """
-    ),
+    .refaccion-actividad {{
+        color: #172033;
+        font-size: 15px;
+        font-weight: 600;
+        line-height: 1.5;
+    }}
+
+
+    /* =====================================================
+       SIN FOLIOS
+       ===================================================== */
+
+    .sin-folios {{
+        background: #F1F5F9;
+        border: 1px solid #D8E1EF;
+        color: #64748B;
+        border-radius: 12px;
+        padding: 14px 18px;
+        text-align: center;
+        font-weight: 700;
+        margin-top: 20px;
+    }}
+
+
+    /* =====================================================
+       SEPARADOR
+       ===================================================== */
+
+    .separador {{
+        height: 2px;
+        background: #DCE4F0;
+        margin: 28px 0;
+        border-radius: 5px;
+    }}
+
+    </style>
+    """,
     unsafe_allow_html=True
 )
 
@@ -592,9 +602,7 @@ st.markdown(
 # ENCABEZADO
 # =========================================================
 
-col1, col2 = st.columns(
-    [5, 1]
-)
+col1, col2 = st.columns([5, 1])
 
 
 with col1:
@@ -646,47 +654,57 @@ df_refacciones = cargar_refacciones()
 
 # =========================================================
 # TOTAL DE UNIDADES
+# SERIES ÚNICAS
 # =========================================================
+
+total_unidades = 0
 
 if "SERIE" in df.columns:
 
     series_validas = (
         df["SERIE"]
-        .apply(normalizar_clave)
+        .astype("string")
+        .fillna("")
+        .str.strip()
+        .str.upper()
     )
 
     series_validas = series_validas[
         series_validas != ""
     ]
 
-    total_unidades = (
-        series_validas
-        .nunique()
+    total_unidades = int(
+        series_validas.nunique()
     )
-
-else:
-
-    total_unidades = 0
 
 
 # =========================================================
-# CENTENARIO / LALA / OTROS
+# CENTENARIO / LALA
+# CONTAR SERIES ÚNICAS POR PISO
 # =========================================================
 
 centenario = 0
 lala = 0
-otros_piso = 0
+
 
 if (
     "Piso" in df.columns
     and "SERIE" in df.columns
 ):
 
-    temp_piso = df.copy()
+    temp_piso = df[
+        [
+            "SERIE",
+            "Piso"
+        ]
+    ].copy()
 
     temp_piso["_SERIE"] = (
         temp_piso["SERIE"]
-        .apply(normalizar_clave)
+        .astype("string")
+        .fillna("")
+        .str.strip()
+        .str.upper()
     )
 
     temp_piso["_PISO"] = (
@@ -701,32 +719,33 @@ if (
         temp_piso["_SERIE"] != ""
     ]
 
-    # Una sola vez por serie
-    temp_piso = temp_piso.drop_duplicates(
-        subset="_SERIE",
-        keep="first"
+    # Para cada serie toma el primer Piso con información
+    piso_por_serie = (
+        temp_piso
+        .groupby("_SERIE")["_PISO"]
+        .apply(
+            lambda valores: next(
+                (
+                    valor
+                    for valor in valores
+                    if valor != ""
+                ),
+                ""
+            )
+        )
     )
 
     centenario = int(
-        temp_piso["_PISO"]
+        piso_por_serie
         .eq("CENTENARIO")
         .sum()
     )
 
     lala = int(
-        temp_piso["_PISO"]
+        piso_por_serie
         .eq("LALA")
         .sum()
     )
-
-    otros_piso = (
-        total_unidades
-        - centenario
-        - lala
-    )
-
-    if otros_piso < 0:
-        otros_piso = 0
 
 
 # =========================================================
@@ -734,29 +753,25 @@ if (
 # =========================================================
 
 st.markdown(
-    dedent(
-        f"""
-        <div class="total-piso">
+    f"""
+    <div class="total-piso">
 
-            <div class="total-titulo">
-                🚗 TOTAL DE UNIDADES
-            </div>
-
-            <div class="total-numero">
-                {total_unidades:,}
-            </div>
-
-            <div class="total-desglose">
-                Centenario: <b>{centenario:,}</b>
-                &nbsp;&nbsp; / &nbsp;&nbsp;
-                Lala: <b>{lala:,}</b>
-                &nbsp;&nbsp; / &nbsp;&nbsp;
-                Otros / Sin piso: <b>{otros_piso:,}</b>
-            </div>
-
+        <div class="total-titulo">
+            🚗 TOTAL DE UNIDADES
         </div>
-        """
-    ),
+
+        <div class="total-numero">
+            {total_unidades}
+        </div>
+
+        <div class="total-desglose">
+            Centenario: <b>{centenario}</b>
+            &nbsp;&nbsp; / &nbsp;&nbsp;
+            Lala: <b>{lala}</b>
+        </div>
+
+    </div>
+    """,
     unsafe_allow_html=True
 )
 
@@ -769,6 +784,7 @@ st.markdown(
     '<div class="titulo-seccion">🔎 Buscar unidad</div>',
     unsafe_allow_html=True
 )
+
 
 busqueda = st.text_input(
     "Busca por PLACA o SERIE",
@@ -908,6 +924,7 @@ serie = valor_visible(
 
 # =========================================================
 # DÍAS EN PISO
+# VA DIRECTAMENTE ABAJO DEL BUSCADOR
 # =========================================================
 
 dias_piso = unidad.get(
@@ -926,7 +943,7 @@ if tiene_informacion(
         )
 
         texto_dias = (
-            f"{dias_numero:,} días"
+            f"{dias_numero} días"
         )
 
     except Exception:
@@ -940,26 +957,20 @@ else:
     texto_dias = "🆕 Recién ingresado"
 
 
-# =========================================================
-# TARJETA DÍAS EN PISO
-# =========================================================
-
 st.markdown(
-    dedent(
-        f"""
-        <div class="tarjeta-piso">
+    f"""
+    <div class="tarjeta-piso">
 
-            <div class="dias-label">
-                🏭 DÍAS EN PISO
-            </div>
-
-            <div class="dias-grande">
-                {texto_dias}
-            </div>
-
+        <div class="dias-label">
+            🏭 DÍAS EN PISO
         </div>
-        """
-    ),
+
+        <div class="dias-grande">
+            {texto_dias}
+        </div>
+
+    </div>
+    """,
     unsafe_allow_html=True
 )
 
@@ -969,13 +980,11 @@ st.markdown(
 # =========================================================
 
 st.markdown(
-    dedent(
-        f"""
-        <div class="titulo-seccion">
-            🚗 {placa} | {serie}
-        </div>
-        """
-    ),
+    f"""
+    <div class="titulo-seccion">
+        🚗 {placa} | {serie}
+    </div>
+    """,
     unsafe_allow_html=True
 )
 
@@ -1155,22 +1164,29 @@ with col3:
 # CONTROL DE FOLIOS ABIERTOS
 # =========================================================
 
-hay_folio_abierto = False
+folios_abiertos = []
 
 
 # =========================================================
 # GESTORÍA
+# SOLO SI TIENE FOLIO
 # =========================================================
 
 folio_gestoria = unidad.get(
     "Gestorías1.Folio"
 )
 
-if tiene_informacion(
-    folio_gestoria
-):
 
-    hay_folio_abierto = True
+tiene_gestoria = tiene_informacion(
+    folio_gestoria
+)
+
+
+if tiene_gestoria:
+
+    folios_abiertos.append(
+        "Gestoría"
+    )
 
     st.markdown(
         '<div class="separador"></div>',
@@ -1281,6 +1297,7 @@ if tiene_informacion(
 
 # =========================================================
 # MANTENIMIENTO
+# SOLO SI TIENE FOLIO
 # =========================================================
 
 folio_mantenimiento = unidad.get(
@@ -1288,11 +1305,16 @@ folio_mantenimiento = unidad.get(
 )
 
 
-if tiene_informacion(
+tiene_mantenimiento = tiene_informacion(
     folio_mantenimiento
-):
+)
 
-    hay_folio_abierto = True
+
+if tiene_mantenimiento:
+
+    folios_abiertos.append(
+        "Mantenimiento"
+    )
 
     st.markdown(
         '<div class="separador"></div>',
@@ -1388,6 +1410,7 @@ if tiene_informacion(
 
 # =========================================================
 # ZIGA TALLERES
+# SOLO SI TIENE FOLIO
 # =========================================================
 
 folio_ziga = unidad.get(
@@ -1395,11 +1418,16 @@ folio_ziga = unidad.get(
 )
 
 
-if tiene_informacion(
+tiene_ziga = tiene_informacion(
     folio_ziga
-):
+)
 
-    hay_folio_abierto = True
+
+if tiene_ziga:
+
+    folios_abiertos.append(
+        "Ziga Talleres"
+    )
 
     st.markdown(
         '<div class="separador"></div>',
@@ -1495,23 +1523,42 @@ if tiene_informacion(
 
 # =========================================================
 # SINIESTRO
+# SOLO SI TIENE FOLIO / REGISTRO
 # =========================================================
 
 folio_siniestro = unidad.get(
     "Siniestro"
 )
 
-folio_siniestro_2 = unidad.get(
-    "Siniestros2.CATEGORIA"
+
+tiene_siniestro = tiene_informacion(
+    folio_siniestro
 )
 
 
-if (
-    tiene_informacion(folio_siniestro)
-    or tiene_informacion(folio_siniestro_2)
-):
+# Si Siniestro está vacío, también revisamos
+# los campos detallados como respaldo.
+if not tiene_siniestro:
 
-    hay_folio_abierto = True
+    tiene_siniestro = any(
+        tiene_informacion(
+            unidad.get(columna)
+        )
+        for columna in [
+            "Siniestros2.CATEGORIA",
+            "Siniestros2.ETAPA",
+            "Siniestros2.dias",
+            "Siniestros2.FECHA APERTURA",
+            "Siniestros2.FECHA SINIESTRO"
+        ]
+    )
+
+
+if tiene_siniestro:
+
+    folios_abiertos.append(
+        "Siniestro"
+    )
 
     st.markdown(
         '<div class="separador"></div>',
@@ -1607,121 +1654,44 @@ if (
 
 # =========================================================
 # REFACCIONES
+# RELACIÓN SERIE VS SERIE
 # =========================================================
 
-refacciones_encontradas = False
-
 if not df_refacciones.empty:
-
-    # -----------------------------------------------------
-    # IDENTIFICAR COLUMNAS
-    # -----------------------------------------------------
 
     col_serie_ref = None
     col_folio_ref = None
     col_actividad_ref = None
 
 
+    # -----------------------------------------------
+    # IDENTIFICAR COLUMNAS
+    # -----------------------------------------------
+
     for columna in df_refacciones.columns:
 
         clave = (
             str(columna)
             .strip()
-            .upper()
+            .lower()
         )
 
-        clave_limpia = re.sub(
-            r"[^A-Z0-9]",
-            "",
-            clave
-        )
+        if clave == "serie":
 
+            col_serie_ref = columna
 
-        # =============================================
-        # SERIE T
-        # =============================================
-
-        if clave_limpia in [
-            "SERIET",
-            "SERIE",
-            "SERIEUNIDAD",
-            "VIN"
-        ]:
-
-            # Preferir SERIE T
-            if (
-                "T" in clave_limpia
-                or col_serie_ref is None
-            ):
-
-                col_serie_ref = columna
-
-
-        # =============================================
-        # FOLIO
-        # =============================================
-
-        if clave_limpia in [
-            "FOLIOWS",
-            "FOLIO"
-        ]:
+        elif clave == "folio ws":
 
             col_folio_ref = columna
 
-
-        # =============================================
-        # ACTIVIDAD
-        # =============================================
-
-        if clave_limpia in [
-            "ACTIVIDAD",
-            "ACTIVIDADES"
-        ]:
+        elif clave == "actividad":
 
             col_actividad_ref = columna
 
 
-    # -----------------------------------------------------
-    # SI NO ENCONTRÓ FOLIO/ACTIVIDAD, BUSCAR POR NOMBRE
-    # -----------------------------------------------------
-
-    if col_folio_ref is None:
-
-        for columna in df_refacciones.columns:
-
-            clave = (
-                str(columna)
-                .strip()
-                .upper()
-            )
-
-            if "FOLIO" in clave:
-
-                col_folio_ref = columna
-
-                break
-
-
-    if col_actividad_ref is None:
-
-        for columna in df_refacciones.columns:
-
-            clave = (
-                str(columna)
-                .strip()
-                .upper()
-            )
-
-            if "ACTIVIDAD" in clave:
-
-                col_actividad_ref = columna
-
-                break
-
-
-    # -----------------------------------------------------
-    # CRUCE SERIE CON SERIE T
-    # -----------------------------------------------------
+    # -----------------------------------------------
+    # VALIDAR
+    # -----------------------------------------------
 
     if (
         col_serie_ref is not None
@@ -1732,16 +1702,29 @@ if not df_refacciones.empty:
         ref = df_refacciones.copy()
 
 
+        # -------------------------------------------
+        # NORMALIZAR SERIE REFACCIONES
+        # -------------------------------------------
+
         ref["_SERIE_BUSQUEDA"] = (
             ref[col_serie_ref]
-            .apply(normalizar_clave)
+            .astype("string")
+            .fillna("")
+            .str.strip()
+            .str.upper()
         )
 
 
-        serie_actual = normalizar_clave(
-            serie
+        serie_actual = (
+            str(serie)
+            .strip()
+            .upper()
         )
 
+
+        # -------------------------------------------
+        # CRUCE SERIE VS SERIE
+        # -------------------------------------------
 
         ref = ref[
             ref["_SERIE_BUSQUEDA"]
@@ -1749,14 +1732,18 @@ if not df_refacciones.empty:
         ].copy()
 
 
-        # -------------------------------------------------
-        # MOSTRAR SOLO SI ENCONTRÓ INFORMACIÓN
-        # -------------------------------------------------
+        # -------------------------------------------
+        # SOLO SI EXISTEN REGISTROS
+        # -------------------------------------------
 
         if not ref.empty:
 
             grupos = []
 
+
+            # -------------------------------------------
+            # AGRUPAR POR FOLIO WS
+            # -------------------------------------------
 
             for folio, grupo in ref.groupby(
                 col_folio_ref,
@@ -1772,6 +1759,10 @@ if not df_refacciones.empty:
 
                 actividades = []
 
+
+                # ---------------------------------------
+                # ACTIVIDADES ÚNICAS
+                # ---------------------------------------
 
                 for actividad in grupo[
                     col_actividad_ref
@@ -1789,12 +1780,15 @@ if not df_refacciones.empty:
                     ).strip()
 
 
-                    if not any(
+                    repetida = any(
                         texto.casefold()
                         ==
                         existente.casefold()
                         for existente in actividades
-                    ):
+                    )
+
+
+                    if not repetida:
 
                         actividades.append(
                             texto
@@ -1816,11 +1810,11 @@ if not df_refacciones.empty:
                     )
 
 
+            # -------------------------------------------
+            # MOSTRAR REFACCIONES
+            # -------------------------------------------
+
             if grupos:
-
-                refacciones_encontradas = True
-
-                hay_folio_abierto = True
 
                 st.markdown(
                     '<div class="separador"></div>',
@@ -1835,22 +1829,24 @@ if not df_refacciones.empty:
 
                 for folio, actividades in grupos:
 
+                    folios_abiertos.append(
+                        "Refacciones"
+                    )
+
                     st.markdown(
-                        dedent(
-                            f"""
-                            <div class="refaccion-card">
+                        f"""
+                        <div class="refaccion-card">
 
-                                <div class="refaccion-folio">
-                                    FOLIO WS: {folio}
-                                </div>
-
-                                <div class="refaccion-actividad">
-                                    {actividades}
-                                </div>
-
+                            <div class="refaccion-folio">
+                                FOLIO WS: {folio}
                             </div>
-                            """
-                        ),
+
+                            <div class="refaccion-actividad">
+                                {actividades}
+                            </div>
+
+                        </div>
+                        """,
                         unsafe_allow_html=True
                     )
 
@@ -1859,7 +1855,7 @@ if not df_refacciones.empty:
 # SIN FOLIOS ABIERTOS
 # =========================================================
 
-if not hay_folio_abierto:
+if not folios_abiertos:
 
     st.markdown(
         '<div class="separador"></div>',
@@ -1869,7 +1865,7 @@ if not hay_folio_abierto:
     st.markdown(
         """
         <div class="sin-folios">
-            ✓ Esta unidad no tiene folios abiertos actualmente.
+            ✓ Esta unidad no tiene folios abiertos
         </div>
         """,
         unsafe_allow_html=True
