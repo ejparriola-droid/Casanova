@@ -1,4 +1,3 @@
-```python
 import streamlit as st
 import pandas as pd
 from pathlib import Path
@@ -1898,4 +1897,3 @@ st.markdown(
 st.caption(
     "Casanova | Control de Unidades"
 )
-```
