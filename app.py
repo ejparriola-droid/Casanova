@@ -60,64 +60,50 @@ def verificar_login(usuario, password):
 def mostrar_login():
 
     st.markdown(
-        dedent(
-            f"""
-            <style>
+        f"""
+<style>
 
-            .login-box {{
-                max-width: 430px;
-                margin: 70px auto 20px auto;
-                background: white;
-                padding: 38px;
-                border-radius: 18px;
-                border: 1px solid #D8E1EF;
-                box-shadow: 0 8px 30px rgba(33,55,105,0.12);
-                text-align: center;
-            }}
+.login-box {{
+    max-width: 430px;
+    margin: 70px auto 20px auto;
+    background: white;
+    padding: 38px;
+    border-radius: 18px;
+    border: 1px solid #D8E1EF;
+    box-shadow: 0 8px 30px rgba(33,55,105,0.12);
+    text-align: center;
+}}
 
-            .login-icon {{
-                font-size: 48px;
-                margin-bottom: 8px;
-            }}
+.login-icon {{
+    font-size: 48px;
+    margin-bottom: 8px;
+}}
 
-            .login-title {{
-                color: {AZUL_MARINO};
-                font-size: 27px;
-                font-weight: 800;
-            }}
+.login-title {{
+    color: {AZUL_MARINO};
+    font-size: 27px;
+    font-weight: 800;
+}}
 
-            .login-subtitle {{
-                color: #64748B;
-                font-size: 14px;
-                margin-top: 5px;
-            }}
+.login-subtitle {{
+    color: #64748B;
+    font-size: 14px;
+    margin-top: 5px;
+}}
 
-            </style>
-            """
-        ),
+</style>
+""",
         unsafe_allow_html=True
     )
 
     st.markdown(
-        dedent(
-            """
-            <div class="login-box">
-
-                <div class="login-icon">
-                    🚗
-                </div>
-
-                <div class="login-title">
-                    CASANOVA
-                </div>
-
-                <div class="login-subtitle">
-                    Control de Unidades
-                </div>
-
-            </div>
-            """
-        ),
+        """
+<div class="login-box">
+<div class="login-icon">🚗</div>
+<div class="login-title">CASANOVA</div>
+<div class="login-subtitle">Control de Unidades</div>
+</div>
+""",
         unsafe_allow_html=True
     )
 
@@ -361,14 +347,12 @@ def normalizar_texto(valor):
 
 def tarjeta(campo, valor):
 
-    return dedent(
-        f"""
-        <div class="tarjeta">
-            <div class="campo">{campo}</div>
-            <div class="valor">{valor}</div>
-        </div>
-        """
-    )
+    return f"""
+<div class="tarjeta">
+<div class="campo">{campo}</div>
+<div class="valor">{valor}</div>
+</div>
+"""
 
 
 # =========================================================
@@ -376,181 +360,178 @@ def tarjeta(campo, valor):
 # =========================================================
 
 st.markdown(
-    dedent(
-        f"""
-        <style>
+    f"""
+<style>
 
-        .stApp {{
-            background-color: #F7F9FC;
-        }}
+.stApp {{
+    background-color: #F7F9FC;
+}}
 
-        /* =================================================
-           TÍTULOS
-           ================================================= */
+/* =================================================
+   TÍTULOS
+   ================================================= */
 
-        .titulo-principal {{
-            color: {AZUL_MARINO};
-            font-size: 30px;
-            font-weight: 800;
-            margin-bottom: 0px;
-        }}
+.titulo-principal {{
+    color: {AZUL_MARINO};
+    font-size: 30px;
+    font-weight: 800;
+    margin-bottom: 0px;
+}}
 
-        .subtitulo {{
-            color: #64748B;
-            font-size: 14px;
-            margin-bottom: 18px;
-        }}
+.subtitulo {{
+    color: #64748B;
+    font-size: 14px;
+    margin-bottom: 18px;
+}}
 
-        .titulo-seccion {{
-            color: {AZUL_MARINO};
-            font-size: 21px;
-            font-weight: 750;
-            margin-top: 22px;
-            margin-bottom: 12px;
-        }}
+.titulo-seccion {{
+    color: {AZUL_MARINO};
+    font-size: 21px;
+    font-weight: 750;
+    margin-top: 22px;
+    margin-bottom: 12px;
+}}
 
-        /* =================================================
-           TARJETAS
-           ================================================= */
+/* =================================================
+   TARJETAS
+   ================================================= */
 
-        .tarjeta {{
-            background: {BLANCO};
-            border: 1px solid #D8E1EF;
-            border-radius: 14px;
-            padding: 16px 18px;
-            min-height: 78px;
-            box-shadow: 0 2px 8px rgba(33,55,105,0.06);
-            margin-bottom: 12px;
-        }}
+.tarjeta {{
+    background: {BLANCO};
+    border: 1px solid #D8E1EF;
+    border-radius: 14px;
+    padding: 16px 18px;
+    min-height: 78px;
+    box-shadow: 0 2px 8px rgba(33,55,105,0.06);
+    margin-bottom: 12px;
+}}
 
-        .campo {{
-            color: #64748B;
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }}
+.campo {{
+    color: #64748B;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 5px;
+}}
 
-        .valor {{
-            color: #172033;
-            font-size: 17px;
-            font-weight: 700;
-            word-break: break-word;
-        }}
+.valor {{
+    color: #172033;
+    font-size: 17px;
+    font-weight: 700;
+    word-break: break-word;
+}}
 
-        /* =================================================
-           TOTAL
-           ================================================= */
+/* =================================================
+   TOTAL
+   ================================================= */
 
-        .total-piso {{
-            background: linear-gradient(
-                135deg,
-                {AZUL_MARINO},
-                {AZUL_CASANOVA}
-            );
+.total-piso {{
+    background: linear-gradient(
+        135deg,
+        {AZUL_MARINO},
+        {AZUL_CASANOVA}
+    );
+    color: white;
+    border-radius: 16px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 14px rgba(33,55,105,0.18);
+}}
 
-            color: white;
-            border-radius: 16px;
-            padding: 20px 24px;
-            margin-bottom: 24px;
-            box-shadow: 0 4px 14px rgba(33,55,105,0.18);
-        }}
+.total-titulo {{
+    font-size: 14px;
+    font-weight: 600;
+    opacity: 0.95;
+}}
 
-        .total-titulo {{
-            font-size: 14px;
-            font-weight: 600;
-            opacity: 0.95;
-        }}
+.total-numero {{
+    font-size: 42px;
+    font-weight: 800;
+    margin-top: 2px;
+}}
 
-        .total-numero {{
-            font-size: 42px;
-            font-weight: 800;
-            margin-top: 2px;
-        }}
+/* =================================================
+   DÍAS EN PISO
+   ================================================= */
 
-        /* =================================================
-           DÍAS EN PISO
-           ================================================= */
+.tarjeta-piso {{
+    background: white;
+    border: 2px solid {AMARILLO};
+    border-radius: 14px;
+    padding: 18px;
+    text-align: center;
+    box-shadow: 0 3px 10px rgba(255,183,0,0.12);
+    margin-top: 10px;
+    margin-bottom: 20px;
+}}
 
-        .tarjeta-piso {{
-            background: white;
-            border: 2px solid {AMARILLO};
-            border-radius: 14px;
-            padding: 18px;
-            text-align: center;
-            box-shadow: 0 3px 10px rgba(255,183,0,0.12);
-            margin-top: 10px;
-            margin-bottom: 20px;
-        }}
+.dias-label {{
+    color: #64748B;
+    font-size: 13px;
+    font-weight: 600;
+}}
 
-        .dias-label {{
-            color: #64748B;
-            font-size: 13px;
-            font-weight: 600;
-        }}
+.dias-grande {{
+    color: {AZUL_MARINO};
+    font-size: 32px;
+    font-weight: 800;
+    margin-top: 3px;
+}}
 
-        .dias-grande {{
-            color: {AZUL_MARINO};
-            font-size: 32px;
-            font-weight: 800;
-            margin-top: 3px;
-        }}
+/* =================================================
+   REFACCIONES
+   ================================================= */
 
-        /* =================================================
-           REFACCIONES
-           ================================================= */
+.refaccion-card {{
+    background: white;
+    border: 1px solid #D8E1EF;
+    border-left: 5px solid {AMARILLO};
+    border-radius: 13px;
+    padding: 16px 18px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 7px rgba(33,55,105,0.05);
+}}
 
-        .refaccion-card {{
-            background: white;
-            border: 1px solid #D8E1EF;
-            border-left: 5px solid {AMARILLO};
-            border-radius: 13px;
-            padding: 16px 18px;
-            margin-bottom: 12px;
-            box-shadow: 0 2px 7px rgba(33,55,105,0.05);
-        }}
+.refaccion-folio {{
+    color: {AZUL_MARINO};
+    font-size: 15px;
+    font-weight: 800;
+    margin-bottom: 8px;
+}}
 
-        .refaccion-folio {{
-            color: {AZUL_MARINO};
-            font-size: 15px;
-            font-weight: 800;
-            margin-bottom: 8px;
-        }}
+.refaccion-actividad {{
+    color: #172033;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.5;
+}}
 
-        .refaccion-actividad {{
-            color: #172033;
-            font-size: 15px;
-            font-weight: 600;
-            line-height: 1.5;
-        }}
+/* =================================================
+   SIN FOLIOS
+   ================================================= */
 
-        /* =================================================
-           SIN FOLIOS
-           ================================================= */
+.sin-folios {{
+    background: #EEF4FB;
+    border: 1px solid #D5E2F2;
+    border-radius: 12px;
+    padding: 15px 18px;
+    color: {AZUL_MARINO};
+    font-weight: 700;
+    margin-top: 20px;
+}}
 
-        .sin-folios {{
-            background: #EEF4FB;
-            border: 1px solid #D5E2F2;
-            border-radius: 12px;
-            padding: 15px 18px;
-            color: {AZUL_MARINO};
-            font-weight: 700;
-            margin-top: 20px;
-        }}
+/* =================================================
+   SEPARADOR
+   ================================================= */
 
-        /* =================================================
-           SEPARADOR
-           ================================================= */
+.separador {{
+    height: 2px;
+    background: #DCE4F0;
+    margin: 28px 0;
+    border-radius: 5px;
+}}
 
-        .separador {{
-            height: 2px;
-            background: #DCE4F0;
-            margin: 28px 0;
-            border-radius: 5px;
-        }}
-
-        </style>
-        """
-    ),
+</style>
+""",
     unsafe_allow_html=True
 )
 
@@ -644,21 +625,12 @@ else:
 # =========================================================
 
 st.markdown(
-    dedent(
-        f"""
-        <div class="total-piso">
-
-            <div class="total-titulo">
-                🚗 TOTAL DE UNIDADES
-            </div>
-
-            <div class="total-numero">
-                {total_unidades:,}
-            </div>
-
-        </div>
-        """
-    ),
+    f"""
+<div class="total-piso">
+<div class="total-titulo">🚗 TOTAL DE UNIDADES</div>
+<div class="total-numero">{total_unidades:,}</div>
+</div>
+""",
     unsafe_allow_html=True
 )
 
@@ -841,21 +813,12 @@ else:
 # =========================================================
 
 st.markdown(
-    dedent(
-        f"""
-        <div class="tarjeta-piso">
-
-            <div class="dias-label">
-                🏭 DÍAS EN PISO
-            </div>
-
-            <div class="dias-grande">
-                {texto_dias}
-            </div>
-
-        </div>
-        """
-    ),
+    f"""
+<div class="tarjeta-piso">
+<div class="dias-label">🏭 DÍAS EN PISO</div>
+<div class="dias-grande">{texto_dias}</div>
+</div>
+""",
     unsafe_allow_html=True
 )
 
@@ -865,13 +828,11 @@ st.markdown(
 # =========================================================
 
 st.markdown(
-    dedent(
-        f"""
-        <div class="titulo-seccion">
-            🚗 {placa} | {serie}
-        </div>
-        """
-    ),
+    f"""
+<div class="titulo-seccion">
+🚗 {placa} | {serie}
+</div>
+""",
     unsafe_allow_html=True
 )
 
@@ -1599,21 +1560,12 @@ if grupos_refacciones:
         )
 
         st.markdown(
-            dedent(
-                f"""
-                <div class="refaccion-card">
-
-                    <div class="refaccion-folio">
-                        FOLIO WS: {folio}
-                    </div>
-
-                    <div class="refaccion-actividad">
-                        {actividades_html}
-                    </div>
-
-                </div>
-                """
-            ),
+            f"""
+<div class="refaccion-card">
+<div class="refaccion-folio">FOLIO WS: {folio}</div>
+<div class="refaccion-actividad">{actividades_html}</div>
+</div>
+""",
             unsafe_allow_html=True
         )
 
@@ -1625,13 +1577,11 @@ if grupos_refacciones:
 if not hay_folio_abierto:
 
     st.markdown(
-        dedent(
-            """
-            <div class="sin-folios">
-                ℹ️ Esta unidad no tiene folios abiertos.
-            </div>
-            """
-        ),
+        """
+<div class="sin-folios">
+ℹ️ Esta unidad no tiene folios abiertos.
+</div>
+""",
         unsafe_allow_html=True
     )
 
