@@ -45,6 +45,14 @@ BLANCO = "#FFFFFF"
 
 
 # =========================================================
+# SEMÁFORO DE DÍAS (ajusta estos números a tu operación)
+# =========================================================
+
+DIAS_AMBAR = 30    # desde aquí: amarillo (requiere atención)
+DIAS_ROJO = 60     # desde aquí: rojo (crítico)
+
+
+# =========================================================
 # ESTILO GLOBAL
 # =========================================================
 
@@ -465,6 +473,144 @@ div[data-baseweb="popover"] li:hover {{
 }}
 
 /* =================================================
+   SEMÁFORO KPI
+   ================================================= */
+
+.kpi-verde {{
+    background: linear-gradient(135deg, #127A3D, #1FA855);
+    color: white;
+    border-radius: 16px;
+    padding: 20px 24px;
+    box-shadow: 0 6px 18px rgba(22,122,62,0.25);
+    height: 100%;
+}}
+
+.kpi-ambar {{
+    background: linear-gradient(135deg, #E59E00, {AMARILLO});
+    color: #2A1D00;
+    border-radius: 16px;
+    padding: 20px 24px;
+    box-shadow: 0 6px 18px rgba(255,183,0,0.30);
+    height: 100%;
+}}
+
+.kpi-rojo {{
+    background: linear-gradient(135deg, #A81E1E, #E04040);
+    color: white;
+    border-radius: 16px;
+    padding: 20px 24px;
+    box-shadow: 0 6px 18px rgba(200,40,40,0.28);
+    height: 100%;
+}}
+
+.kpi-sub {{
+    font-size: 13px;
+    font-weight: 800;
+    margin-top: 8px;
+    opacity: 0.95;
+}}
+
+/* =================================================
+   RESUMEN DE FOLIOS (CHIPS)
+   ================================================= */
+
+.resumen {{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 4px 0 8px 0;
+}}
+
+.chip {{
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 800;
+    border: 1px solid;
+}}
+
+.chip-on {{
+    background: #FFF3D0;
+    color: #8A6100;
+    border-color: #F5D77A;
+}}
+
+.chip-off {{
+    background: #F1F4F9;
+    color: #94A3B8;
+    border-color: #E1E8F3;
+}}
+
+.chip-punto {{
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: currentColor;
+}}
+
+/* =================================================
+   ENCABEZADO DE SECCIÓN CON DÍAS
+   ================================================= */
+
+.seccion-head {{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 26px 0 12px 0;
+}}
+
+.seccion-head .titulo-seccion {{
+    margin: 0;
+}}
+
+.dias-pill {{
+    padding: 6px 16px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 800;
+}}
+
+.dias-verde {{ background: #E3F6EA; color: #167A3E; }}
+.dias-ambar {{ background: #FFF3D0; color: #8A6100; }}
+.dias-rojo {{ background: #FDE5E5; color: #B42323; }}
+
+/* =================================================
+   ANIMACIÓN SUAVE
+   ================================================= */
+
+@keyframes aparecer {{
+    from {{ opacity: 0; transform: translateY(8px); }}
+    to {{ opacity: 1; transform: translateY(0); }}
+}}
+
+.tarjeta, .refaccion-card, .unidad-header,
+.kpi-azul, .kpi-verde, .kpi-ambar, .kpi-rojo, .kpi-amarillo {{
+    animation: aparecer 0.35s ease both;
+}}
+
+/* Botón de descarga */
+.stDownloadButton > button {{
+    border-radius: 12px;
+    font-weight: 700;
+    padding: 10px 18px;
+    border: 2px solid {AZUL_MARINO};
+    background: white;
+    color: {AZUL_MARINO};
+    transition: all 0.2s ease;
+}}
+
+.stDownloadButton > button:hover {{
+    background: {AMARILLO};
+    border-color: {AMARILLO};
+    color: {AZUL_MARINO};
+}}
+
+/* =================================================
    CELULAR
    ================================================= */
 
@@ -833,10 +979,57 @@ def mostrar_tarjetas(items):
             )
 
 
-def titulo_seccion(texto):
+def dias_numero_o_none(valor):
+
+    if not tiene_informacion(valor):
+
+        return None
+
+    try:
+
+        return int(float(valor))
+
+    except Exception:
+
+        return None
+
+
+def nivel_dias(dias):
+
+    if dias is None:
+
+        return None
+
+    if dias >= DIAS_ROJO:
+
+        return "rojo"
+
+    if dias >= DIAS_AMBAR:
+
+        return "ambar"
+
+    return "verde"
+
+
+def titulo_seccion(texto, dias=None):
+
+    nivel = nivel_dias(dias)
+
+    if nivel is None:
+
+        html = f'<div class="titulo-seccion">{texto}</div>'
+
+    else:
+
+        html = (
+            f'<div class="seccion-head">'
+            f'<div class="titulo-seccion">{texto}</div>'
+            f'<div class="dias-pill dias-{nivel}">⏱ {dias:,} días</div>'
+            f'</div>'
+        )
 
     st.markdown(
-        f'<div class="titulo-seccion">{texto}</div>',
+        html,
         unsafe_allow_html=True
     )
 
@@ -1137,11 +1330,35 @@ with col1:
 
 with col2:
 
+    nivel_piso = nivel_dias(
+        dias_numero_o_none(dias_piso)
+    )
+
+    clase_kpi = {
+        "verde": "kpi-verde",
+        "ambar": "kpi-ambar",
+        "rojo": "kpi-rojo",
+        None: "kpi-amarillo"
+    }[nivel_piso]
+
+    texto_nivel = {
+        "verde": "✅ Rotación normal",
+        "ambar": "⚠️ Requiere atención",
+        "rojo": "🚨 Tiempo crítico en piso",
+        None: ""
+    }[nivel_piso]
+
+    sub_html = (
+        f'<div class="kpi-sub">{texto_nivel}</div>'
+        if texto_nivel else ""
+    )
+
     st.markdown(
         f"""
-<div class="kpi-amarillo" style="margin-top:14px;">
+<div class="{clase_kpi}" style="margin-top:14px;">
 <div class="kpi-label">🏭 Días en piso</div>
 <div class="kpi-numero">{texto_dias}</div>
+{sub_html}
 </div>
 """,
         unsafe_allow_html=True
@@ -1164,143 +1381,6 @@ st.markdown(
 """,
     unsafe_allow_html=True
 )
-
-
-# =========================================================
-# INFORMACIÓN GENERAL
-# =========================================================
-
-titulo_seccion("📋 Información general")
-
-mostrar_tarjetas([
-    ("t", "LÍNEA", valor_visible(unidad.get("LINEA"))),
-    ("t", "MODELO", modelo_visible(unidad.get("MODELO"))),
-    ("b", "ESTATUS", valor_visible(unidad.get("ESTATUS"))),
-    ("t", "SUBESTATUS", valor_visible(unidad.get("SUBESTATUS"))),
-])
-
-
-# =========================================================
-# DATOS DE LA UNIDAD
-# =========================================================
-
-titulo_seccion("🚘 Datos de la unidad")
-
-mostrar_tarjetas([
-    ("t", "NOMBRE DEL CLIENTE", valor_visible(unidad.get("NOMBRE DEL CLIENTE"))),
-    ("t", "ALMACÉN", valor_visible(unidad.get("ALMACÉN"))),
-    ("t", "UNIDAD DE NEGOCIO", valor_visible(unidad.get("UNIDAD NEGOCIO"))),
-])
-
-mostrar_tarjetas([
-    ("t", "GPS", valor_visible(unidad.get("GPS"))),
-    ("t", "PLATAFORMA", valor_visible(unidad.get("PLATAFORMA"))),
-    ("t", "¿REPORTA?", valor_visible(unidad.get("¿REPORTA?"))),
-])
-
-
-# =========================================================
-# CONTROL DE FOLIOS ABIERTOS
-# =========================================================
-
-hay_folio_abierto = False
-
-
-# =========================================================
-# GESTORÍA
-# =========================================================
-
-if tiene_informacion(unidad.get("Gestorías1.Folio")):
-
-    hay_folio_abierto = True
-
-    separador()
-
-    titulo_seccion("📋 Gestoría")
-
-    mostrar_tarjetas([
-        ("t", "FOLIO", valor_visible(unidad.get("Gestorías1.Folio"))),
-        ("b", "ESTATUS DE PÓLIZA", valor_visible(unidad.get("Estatus poliza"))),
-        ("t", "FECHA DE CREACIÓN", fecha_visible(unidad.get("Gestorías1.Fecha de creación"))),
-    ])
-
-    mostrar_tarjetas([
-        ("b", "ESTADO DE ATENCIÓN", valor_visible(unidad.get("Gestorías1.Estado de atención"))),
-        ("t", "DÍAS", numero_entero(unidad.get("Gestorías1.Personalizado"))),
-        ("t", "CONCEPTOS", valor_visible(unidad.get("Gestorías1.Conceptos"))),
-    ])
-
-
-# =========================================================
-# MANTENIMIENTO
-# =========================================================
-
-if tiene_informacion(unidad.get("Mantenimiento.FOLIO")):
-
-    hay_folio_abierto = True
-
-    separador()
-
-    titulo_seccion("🔧 Mantenimiento")
-
-    mostrar_tarjetas([
-        ("t", "FOLIO", valor_visible(unidad.get("Mantenimiento.FOLIO"))),
-        ("t", "FECHA DE CREACIÓN", fecha_visible(unidad.get("Mantenimiento.FECHA DE CREACION DEL FOLIO"))),
-        ("b", "ESTATUS", valor_visible(unidad.get("Mantenimiento.ESTATUS DEL FOLIO"))),
-    ])
-
-    mostrar_tarjetas([
-        ("t", "PROVEEDOR", valor_visible(unidad.get("Mantenimiento.PROVEEDOR"))),
-        ("t", "DÍAS", numero_entero(unidad.get("Mantenimiento.dias"))),
-    ])
-
-
-# =========================================================
-# ZIGA TALLERES
-# =========================================================
-
-if tiene_informacion(unidad.get("Ziga_Talleres.Folio")):
-
-    hay_folio_abierto = True
-
-    separador()
-
-    titulo_seccion("🛠️ Ziga Talleres")
-
-    mostrar_tarjetas([
-        ("t", "FOLIO", valor_visible(unidad.get("Ziga_Talleres.Folio"))),
-        ("b", "ESTATUS", valor_visible(unidad.get("Ziga_Talleres.Estatus"))),
-        ("t", "ÁREA DEL TALLER ACTIVA", valor_visible(unidad.get("Ziga_Talleres.Área del taller activa"))),
-    ])
-
-    mostrar_tarjetas([
-        ("t", "FECHA DE INGRESO", fecha_visible(unidad.get("Ziga_Talleres.Fecha de ingreso"))),
-        ("t", "DÍAS", numero_entero(unidad.get("Ziga_Talleres.dias"))),
-    ])
-
-
-# =========================================================
-# SINIESTRO
-# =========================================================
-
-if tiene_informacion(unidad.get("Siniestro")):
-
-    hay_folio_abierto = True
-
-    separador()
-
-    titulo_seccion("🚨 Siniestro")
-
-    mostrar_tarjetas([
-        ("t", "CATEGORÍA", valor_visible(unidad.get("Siniestros2.CATEGORIA"))),
-        ("t", "ETAPA", valor_visible(unidad.get("Siniestros2.ETAPA"))),
-        ("t", "DÍAS", numero_entero(unidad.get("Siniestros2.dias"))),
-    ])
-
-    mostrar_tarjetas([
-        ("t", "FECHA DE APERTURA", fecha_visible(unidad.get("Siniestros2.FECHA APERTURA"))),
-        ("t", "FECHA DEL SINIESTRO", fecha_visible(unidad.get("Siniestros2.FECHA SINIESTRO"))),
-    ])
 
 
 # =========================================================
@@ -1377,6 +1457,173 @@ if not df_refacciones.empty:
 
 
 # =========================================================
+# RESUMEN DE FOLIOS ABIERTOS (CHIPS)
+# =========================================================
+
+folios_resumen = [
+    ("📋 Gestoría", tiene_informacion(unidad.get("Gestorías1.Folio"))),
+    ("🔧 Mantenimiento", tiene_informacion(unidad.get("Mantenimiento.FOLIO"))),
+    ("🛠️ Ziga Talleres", tiene_informacion(unidad.get("Ziga_Talleres.Folio"))),
+    ("🚨 Siniestro", tiene_informacion(unidad.get("Siniestro"))),
+    ("📦 Refacciones", bool(grupos_refacciones)),
+]
+
+total_abiertos = sum(
+    1 for _, activo in folios_resumen if activo
+)
+
+chips_html = "".join(
+    f'<span class="chip {"chip-on" if activo else "chip-off"}">'
+    f'<span class="chip-punto"></span>{nombre}</span>'
+    for nombre, activo in folios_resumen
+)
+
+titulo_seccion(f"🚦 Resumen de folios abiertos ({total_abiertos})")
+
+st.markdown(
+    f'<div class="resumen">{chips_html}</div>',
+    unsafe_allow_html=True
+)
+
+
+# =========================================================
+# INFORMACIÓN GENERAL
+# =========================================================
+
+titulo_seccion("📋 Información general")
+
+mostrar_tarjetas([
+    ("t", "LÍNEA", valor_visible(unidad.get("LINEA"))),
+    ("t", "MODELO", modelo_visible(unidad.get("MODELO"))),
+    ("b", "ESTATUS", valor_visible(unidad.get("ESTATUS"))),
+    ("t", "SUBESTATUS", valor_visible(unidad.get("SUBESTATUS"))),
+])
+
+
+# =========================================================
+# DATOS DE LA UNIDAD
+# =========================================================
+
+titulo_seccion("🚘 Datos de la unidad")
+
+mostrar_tarjetas([
+    ("t", "NOMBRE DEL CLIENTE", valor_visible(unidad.get("NOMBRE DEL CLIENTE"))),
+    ("t", "ALMACÉN", valor_visible(unidad.get("ALMACÉN"))),
+    ("t", "UNIDAD DE NEGOCIO", valor_visible(unidad.get("UNIDAD NEGOCIO"))),
+])
+
+mostrar_tarjetas([
+    ("t", "GPS", valor_visible(unidad.get("GPS"))),
+    ("t", "PLATAFORMA", valor_visible(unidad.get("PLATAFORMA"))),
+    ("t", "¿REPORTA?", valor_visible(unidad.get("¿REPORTA?"))),
+])
+
+
+# =========================================================
+# CONTROL DE FOLIOS ABIERTOS
+# =========================================================
+
+hay_folio_abierto = False
+
+
+# =========================================================
+# GESTORÍA
+# =========================================================
+
+if tiene_informacion(unidad.get("Gestorías1.Folio")):
+
+    hay_folio_abierto = True
+
+    separador()
+
+    titulo_seccion("📋 Gestoría", dias_numero_o_none(unidad.get("Gestorías1.Personalizado")))
+
+    mostrar_tarjetas([
+        ("t", "FOLIO", valor_visible(unidad.get("Gestorías1.Folio"))),
+        ("b", "ESTATUS DE PÓLIZA", valor_visible(unidad.get("Estatus poliza"))),
+        ("t", "FECHA DE CREACIÓN", fecha_visible(unidad.get("Gestorías1.Fecha de creación"))),
+    ])
+
+    mostrar_tarjetas([
+        ("b", "ESTADO DE ATENCIÓN", valor_visible(unidad.get("Gestorías1.Estado de atención"))),
+        ("t", "DÍAS", numero_entero(unidad.get("Gestorías1.Personalizado"))),
+        ("t", "CONCEPTOS", valor_visible(unidad.get("Gestorías1.Conceptos"))),
+    ])
+
+
+# =========================================================
+# MANTENIMIENTO
+# =========================================================
+
+if tiene_informacion(unidad.get("Mantenimiento.FOLIO")):
+
+    hay_folio_abierto = True
+
+    separador()
+
+    titulo_seccion("🔧 Mantenimiento", dias_numero_o_none(unidad.get("Mantenimiento.dias")))
+
+    mostrar_tarjetas([
+        ("t", "FOLIO", valor_visible(unidad.get("Mantenimiento.FOLIO"))),
+        ("t", "FECHA DE CREACIÓN", fecha_visible(unidad.get("Mantenimiento.FECHA DE CREACION DEL FOLIO"))),
+        ("b", "ESTATUS", valor_visible(unidad.get("Mantenimiento.ESTATUS DEL FOLIO"))),
+    ])
+
+    mostrar_tarjetas([
+        ("t", "PROVEEDOR", valor_visible(unidad.get("Mantenimiento.PROVEEDOR"))),
+        ("t", "DÍAS", numero_entero(unidad.get("Mantenimiento.dias"))),
+    ])
+
+
+# =========================================================
+# ZIGA TALLERES
+# =========================================================
+
+if tiene_informacion(unidad.get("Ziga_Talleres.Folio")):
+
+    hay_folio_abierto = True
+
+    separador()
+
+    titulo_seccion("🛠️ Ziga Talleres", dias_numero_o_none(unidad.get("Ziga_Talleres.dias")))
+
+    mostrar_tarjetas([
+        ("t", "FOLIO", valor_visible(unidad.get("Ziga_Talleres.Folio"))),
+        ("b", "ESTATUS", valor_visible(unidad.get("Ziga_Talleres.Estatus"))),
+        ("t", "ÁREA DEL TALLER ACTIVA", valor_visible(unidad.get("Ziga_Talleres.Área del taller activa"))),
+    ])
+
+    mostrar_tarjetas([
+        ("t", "FECHA DE INGRESO", fecha_visible(unidad.get("Ziga_Talleres.Fecha de ingreso"))),
+        ("t", "DÍAS", numero_entero(unidad.get("Ziga_Talleres.dias"))),
+    ])
+
+
+# =========================================================
+# SINIESTRO
+# =========================================================
+
+if tiene_informacion(unidad.get("Siniestro")):
+
+    hay_folio_abierto = True
+
+    separador()
+
+    titulo_seccion("🚨 Siniestro", dias_numero_o_none(unidad.get("Siniestros2.dias")))
+
+    mostrar_tarjetas([
+        ("t", "CATEGORÍA", valor_visible(unidad.get("Siniestros2.CATEGORIA"))),
+        ("t", "ETAPA", valor_visible(unidad.get("Siniestros2.ETAPA"))),
+        ("t", "DÍAS", numero_entero(unidad.get("Siniestros2.dias"))),
+    ])
+
+    mostrar_tarjetas([
+        ("t", "FECHA DE APERTURA", fecha_visible(unidad.get("Siniestros2.FECHA APERTURA"))),
+        ("t", "FECHA DEL SINIESTRO", fecha_visible(unidad.get("Siniestros2.FECHA SINIESTRO"))),
+    ])
+
+
+# =========================================================
 # MOSTRAR REFACCIONES
 # =========================================================
 
@@ -1423,10 +1670,29 @@ if not hay_folio_abierto:
 
 
 # =========================================================
-# PIE
+# DESCARGAR FICHA DE LA UNIDAD
 # =========================================================
 
 separador()
+
+ficha_serie = unidad.dropna()
+
+ficha_df = pd.DataFrame({
+    "CAMPO": ficha_serie.index.astype(str),
+    "VALOR": ficha_serie.astype(str).values
+})
+
+st.download_button(
+    "⬇️ Descargar ficha de la unidad (CSV)",
+    data=ficha_df.to_csv(index=False).encode("utf-8-sig"),
+    file_name=f"ficha_{placa}.csv",
+    mime="text/csv"
+)
+
+
+# =========================================================
+# PIE
+# =========================================================
 
 st.caption(
     "Casanova | Control de Unidades"
