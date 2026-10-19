@@ -1,4 +1,5 @@
 import re
+import unicodedata
 import streamlit as st
 import pandas as pd
 from pathlib import Path
@@ -716,6 +717,32 @@ def buscar_columna(df, nombre):
     return None
 
 
+def clave_columna(nombre):
+    """Convierte un nombre de columna a una clave comparable:
+    sin acentos, sin mayúsculas, sin espacios ni signos."""
+    texto = unicodedata.normalize("NFKD", str(nombre))
+    texto = "".join(c for c in texto if not unicodedata.combining(c))
+    return re.sub(r"[^a-z0-9]", "", texto.lower())
+
+
+def obtener(fila, nombre):
+    """Lee un campo de la fila ignorando acentos, mayúsculas y espacios."""
+    objetivo = clave_columna(nombre)
+
+    for c in fila.index:
+        if clave_columna(c) == objetivo:
+            return fila[c]
+
+    return None
+
+
+def texto_ejecutivo(valor):
+    """Nombre del ejecutivo, o 'Sin ejecutivo asignado' si está en blanco."""
+    if not tiene_informacion(valor):
+        return "Sin ejecutivo asignado"
+    return str(valor).strip()
+
+
 # =========================================================
 # CARGA DE DATOS
 # =========================================================
@@ -1151,6 +1178,21 @@ with col2:
 # IDENTIDAD DE LA UNIDAD
 # =========================================================
 
+ejecutivo_ziga = obtener(unidad, "Ziga_Talleres.Ejecutivo responsable")
+
+if tiene_informacion(ejecutivo_ziga):
+    estilo_ejecutivo = ""
+else:
+    estilo_ejecutivo = ' style="color:#A7B1C2;font-style:italic;"'
+
+ejecutivo_html = (
+    '<div>'
+    '<div class="unidad-serie-label">EJECUTIVO RESPONSABLE</div>'
+    f'<div class="unidad-serie"{estilo_ejecutivo}>'
+    f'{texto_ejecutivo(ejecutivo_ziga)}</div>'
+    '</div>'
+)
+
 st.markdown(
     f"""
 <div class="unidad-header">
@@ -1159,6 +1201,7 @@ st.markdown(
 <div class="unidad-serie-label">NÚMERO DE SERIE</div>
 <div class="unidad-serie">{serie}</div>
 </div>
+{ejecutivo_html}
 </div>
 """,
     unsafe_allow_html=True
@@ -1362,7 +1405,18 @@ if tiene_informacion(unidad.get("Ziga_Talleres.Folio")):
     mostrar_tarjetas([
         ("t", "FECHA DE INGRESO", fecha_visible(unidad.get("Ziga_Talleres.Fecha de ingreso"))),
         ("t", "DÍAS", numero_entero(unidad.get("Ziga_Talleres.dias"))),
+        ("t", "EJECUTIVO RESPONSABLE", texto_ejecutivo(obtener(unidad, "Ziga_Talleres.Ejecutivo responsable"))),
     ])
+
+    if not any(
+        clave_columna(c) == clave_columna("Ziga_Talleres.Ejecutivo responsable")
+        for c in unidad.index
+    ):
+        st.warning(
+            "No se encontró la columna 'Ziga_Talleres.Ejecutivo responsable' "
+            "en la hoja concentrado. Columnas de Ziga detectadas: "
+            + ", ".join(c for c in unidad.index if "ziga" in clave_columna(c))
+        )
 
 
 # =========================================================
