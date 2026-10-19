@@ -8,7 +8,8 @@ from pathlib import Path
 # =========================================================
 
 st.set_page_config(
-    page_title="Casanova | Control de Unidades",
+    page_title="Casanova | Control de Unidades
+    Centenario / Lala",
     page_icon="🚗",
     layout="wide"
 )
