@@ -45,7 +45,7 @@ BLANCO = "#FFFFFF"
 
 
 # =========================================================
-# SEMÁFORO DE DÍAS (ajusta estos números a tu operación)
+# SEMÁFORO DE DÍAS
 # =========================================================
 
 DIAS_AMBAR = 30
@@ -241,6 +241,14 @@ header {{visibility: hidden;}}
 .kpi-amarillo .kpi-label {{ color: #7A879B; opacity: 1; }}
 .kpi-amarillo .kpi-numero {{ color: {AZUL_MARINO}; }}
 
+/* Texto debajo del total */
+.kpi-subtotal {{
+    color: rgba(255,255,255,0.85);
+    font-size: 13px;
+    font-weight: 700;
+    margin-top: 6px;
+}}
+
 /* =================================================
    IDENTIDAD DE LA UNIDAD
    ================================================= */
@@ -349,24 +357,45 @@ header {{visibility: hidden;}}
     font-size: 15px !important;
 }}
 
+/* Contenedor del buscador */
 .stTextInput div[data-baseweb="input"],
 .stTextInput div[data-baseweb="base-input"] {{
     background: white !important;
     border-radius: 12px !important;
+    color-scheme: light !important;
 }}
 
+/* Texto que escribe el usuario */
 .stTextInput input {{
     color: #172033 !important;
     -webkit-text-fill-color: #172033 !important;
     caret-color: {AZUL_MARINO} !important;
     background: white !important;
+    background-color: white !important;
     border-radius: 12px !important;
     border: 2px solid #D8E1EF !important;
     padding: 12px 16px !important;
     font-size: 16px !important;
     font-weight: 700 !important;
+    color-scheme: light !important;
+    box-shadow: none !important;
 }}
 
+.stTextInput input:hover {{
+    background: white !important;
+    background-color: white !important;
+}}
+
+.stTextInput input:focus {{
+    background: white !important;
+    background-color: white !important;
+    border-color: {AZUL_CASANOVA} !important;
+    box-shadow: 0 0 0 3px rgba(0,72,118,0.12) !important;
+    color: #172033 !important;
+    -webkit-text-fill-color: #172033 !important;
+}}
+
+/* Placeholder */
 .stTextInput input::placeholder {{
     color: #64748B !important;
     -webkit-text-fill-color: #64748B !important;
@@ -374,11 +403,7 @@ header {{visibility: hidden;}}
     opacity: 1 !important;
 }}
 
-.stTextInput input:focus {{
-    border-color: {AZUL_CASANOVA} !important;
-    box-shadow: 0 0 0 3px rgba(0,72,118,0.12) !important;
-}}
-
+/* Botón del ojito */
 .stTextInput button {{
     background: white !important;
     color: {AZUL_MARINO} !important;
@@ -390,6 +415,7 @@ header {{visibility: hidden;}}
     color: {AZUL_MARINO} !important;
 }}
 
+/* Selectbox */
 .stSelectbox div[data-baseweb="select"] > div {{
     background: white !important;
     color: #172033 !important;
@@ -402,6 +428,7 @@ header {{visibility: hidden;}}
     font-weight: 700 !important;
 }}
 
+/* Lista desplegable */
 div[data-baseweb="popover"] ul,
 div[data-baseweb="popover"] li {{
     background: white !important;
@@ -413,6 +440,7 @@ div[data-baseweb="popover"] li:hover {{
     background: #EEF3FA !important;
 }}
 
+/* Botones */
 .stButton > button {{
     border-radius: 12px;
     font-weight: 700;
@@ -448,7 +476,10 @@ div[data-baseweb="popover"] li:hover {{
     text-align: center;
 }}
 
-.login-icon {{ font-size: 50px; margin-bottom: 6px; }}
+.login-icon {{
+    font-size: 50px;
+    margin-bottom: 6px;
+}}
 
 .login-title {{
     color: {AZUL_MARINO};
@@ -503,7 +534,7 @@ div[data-baseweb="popover"] li:hover {{
 }}
 
 /* =================================================
-   RESUMEN DE FOLIOS (CHIPS)
+   RESUMEN DE FOLIOS
    ================================================= */
 
 .resumen {{
@@ -567,25 +598,52 @@ div[data-baseweb="popover"] li:hover {{
     font-weight: 800;
 }}
 
-.dias-verde {{ background: #E3F6EA; color: #167A3E; }}
-.dias-ambar {{ background: #FFF3D0; color: #8A6100; }}
-.dias-rojo {{ background: #FDE5E5; color: #B42323; }}
+.dias-verde {{
+    background: #E3F6EA;
+    color: #167A3E;
+}}
+
+.dias-ambar {{
+    background: #FFF3D0;
+    color: #8A6100;
+}}
+
+.dias-rojo {{
+    background: #FDE5E5;
+    color: #B42323;
+}}
 
 /* =================================================
    ANIMACIÓN SUAVE
    ================================================= */
 
 @keyframes aparecer {{
-    from {{ opacity: 0; transform: translateY(8px); }}
-    to {{ opacity: 1; transform: translateY(0); }}
+    from {{
+        opacity: 0;
+        transform: translateY(8px);
+    }}
+
+    to {{
+        opacity: 1;
+        transform: translateY(0);
+    }}
 }}
 
-.tarjeta, .refaccion-card, .unidad-header,
-.kpi-azul, .kpi-verde, .kpi-ambar, .kpi-rojo, .kpi-amarillo {{
+.tarjeta,
+.refaccion-card,
+.unidad-header,
+.kpi-azul,
+.kpi-verde,
+.kpi-ambar,
+.kpi-rojo,
+.kpi-amarillo {{
     animation: aparecer 0.35s ease both;
 }}
 
-/* Botón de descarga */
+/* =================================================
+   BOTÓN DE DESCARGA
+   ================================================= */
+
 .stDownloadButton > button {{
     border-radius: 12px;
     font-weight: 700;
@@ -607,9 +665,19 @@ div[data-baseweb="popover"] li:hover {{
    ================================================= */
 
 @media (max-width: 768px) {{
-    .topbar-titulo {{ font-size: 18px; }}
-    .kpi-numero {{ font-size: 30px; }}
-    .unidad-placa {{ font-size: 18px; }}
+
+    .topbar-titulo {{
+        font-size: 18px;
+    }}
+
+    .kpi-numero {{
+        font-size: 30px;
+    }}
+
+    .unidad-placa {{
+        font-size: 18px;
+    }}
+
 }}
 
 </style>
@@ -884,9 +952,9 @@ def normalizar_texto(valor):
     )
 
 
-# ---------------------------------------------------------
+# =========================================================
 # TARJETAS
-# ---------------------------------------------------------
+# =========================================================
 
 def tarjeta(campo, valor):
 
@@ -913,21 +981,34 @@ def tarjeta_badge(campo, valor):
     texto = valor.lower()
 
     if any(p in texto for p in [
-        "finaliz", "complet", "cerrad",
-        "entreg", "listo", "vigente", "activ"
+        "finaliz",
+        "complet",
+        "cerrad",
+        "entreg",
+        "listo",
+        "vigente",
+        "activ"
     ]):
 
         clase = "badge-verde"
 
     elif any(p in texto for p in [
-        "cancel", "venc", "rechaz", "detenid"
+        "cancel",
+        "venc",
+        "rechaz",
+        "detenid"
     ]):
 
         clase = "badge-rojo"
 
     elif any(p in texto for p in [
-        "pend", "proceso", "espera",
-        "revis", "abiert", "tramite", "trámite"
+        "pend",
+        "proceso",
+        "espera",
+        "revis",
+        "abiert",
+        "tramite",
+        "trámite"
     ]):
 
         clase = "badge-amarillo"
@@ -948,17 +1029,26 @@ def mostrar_tarjetas(items):
 
     columnas = st.columns(len(items))
 
-    for col, (tipo, campo, valor) in zip(columnas, items):
+    for col, (tipo, campo, valor) in zip(
+        columnas,
+        items
+    ):
 
         with col:
 
             if tipo == "b":
 
-                html = tarjeta_badge(campo, valor)
+                html = tarjeta_badge(
+                    campo,
+                    valor
+                )
 
             else:
 
-                html = tarjeta(campo, valor)
+                html = tarjeta(
+                    campo,
+                    valor
+                )
 
             st.markdown(
                 html,
@@ -1004,14 +1094,22 @@ def titulo_seccion(texto, dias=None):
 
     if nivel is None:
 
-        html = f'<div class="titulo-seccion">{texto}</div>'
+        html = (
+            f'<div class="titulo-seccion">'
+            f'{texto}'
+            f'</div>'
+        )
 
     else:
 
         html = (
             f'<div class="seccion-head">'
-            f'<div class="titulo-seccion">{texto}</div>'
-            f'<div class="dias-pill dias-{nivel}">⏱ {dias:,} días</div>'
+            f'<div class="titulo-seccion">'
+            f'{texto}'
+            f'</div>'
+            f'<div class="dias-pill dias-{nivel}">'
+            f'⏱ {dias:,} días'
+            f'</div>'
             f'</div>'
         )
 
@@ -1141,6 +1239,7 @@ if not busqueda:
 <div class="kpi-azul" style="margin-top:14px;">
 <div class="kpi-label">🚗 Total de unidades</div>
 <div class="kpi-numero">{total_unidades:,}</div>
+<div class="kpi-subtotal">Centenario / Lala</div>
 </div>
 """,
         unsafe_allow_html=True
@@ -1157,7 +1256,9 @@ if not busqueda:
 # PREPARAR BÚSQUEDA
 # =========================================================
 
-criterio = normalizar_texto(busqueda)
+criterio = normalizar_texto(
+    busqueda
+)
 
 
 placas = (
@@ -1310,15 +1411,19 @@ with col1:
 <div class="kpi-azul" style="margin-top:14px;">
 <div class="kpi-label">🚗 Total de unidades</div>
 <div class="kpi-numero">{total_unidades:,}</div>
+<div class="kpi-subtotal">Centenario / Lala</div>
 </div>
 """,
         unsafe_allow_html=True
     )
 
+
 with col2:
 
     nivel_piso = nivel_dias(
-        dias_numero_o_none(dias_piso)
+        dias_numero_o_none(
+            dias_piso
+        )
     )
 
     clase_kpi = {
@@ -1336,8 +1441,11 @@ with col2:
     }[nivel_piso]
 
     sub_html = (
-        f'<div class="kpi-sub">{texto_nivel}</div>'
-        if texto_nivel else ""
+        f'<div class="kpi-sub">'
+        f'{texto_nivel}'
+        f'</div>'
+        if texto_nivel
+        else ""
     )
 
     st.markdown(
@@ -1404,7 +1512,9 @@ if not df_refacciones.empty:
             .str.upper()
         )
 
-        serie_actual = normalizar_texto(serie)
+        serie_actual = normalizar_texto(
+            serie
+        )
 
         ref = ref[
             ref["_SERIE_BUSQUEDA"] == serie_actual
@@ -1415,62 +1525,127 @@ if not df_refacciones.empty:
             sort=False
         ):
 
-            if not tiene_informacion(folio):
+            if not tiene_informacion(
+                folio
+            ):
 
                 continue
 
             actividades = []
 
-            for actividad in grupo[col_actividad_ref]:
+            for actividad in grupo[
+                col_actividad_ref
+            ]:
 
-                if not tiene_informacion(actividad):
+                if not tiene_informacion(
+                    actividad
+                ):
 
                     continue
 
-                texto = str(actividad).strip()
+                texto = str(
+                    actividad
+                ).strip()
 
                 if not any(
-                    texto.casefold() == existente.casefold()
+                    texto.casefold()
+                    ==
+                    existente.casefold()
                     for existente in actividades
                 ):
 
-                    actividades.append(texto)
+                    actividades.append(
+                        texto
+                    )
 
             if actividades:
 
                 grupos_refacciones.append(
-                    (str(folio).strip(), actividades)
+                    (
+                        str(folio).strip(),
+                        actividades
+                    )
                 )
 
 
 # =========================================================
-# RESUMEN DE FOLIOS ABIERTOS (CHIPS)
+# RESUMEN DE FOLIOS ABIERTOS
 # =========================================================
 
 folios_resumen = [
-    ("📋 Gestoría", tiene_informacion(unidad.get("Gestorías1.Folio"))),
-    ("🔧 Mantenimiento", tiene_informacion(unidad.get("Mantenimiento.FOLIO"))),
-    ("🛠️ Ziga Talleres", tiene_informacion(unidad.get("Ziga_Talleres.Folio"))),
-    ("🚨 Siniestro", tiene_informacion(unidad.get("Siniestro"))),
-    ("📦 Refacciones", bool(grupos_refacciones)),
+    (
+        "📋 Gestoría",
+        tiene_informacion(
+            unidad.get(
+                "Gestorías1.Folio"
+            )
+        )
+    ),
+
+    (
+        "🔧 Mantenimiento",
+        tiene_informacion(
+            unidad.get(
+                "Mantenimiento.FOLIO"
+            )
+        )
+    ),
+
+    (
+        "🛠️ Ziga Talleres",
+        tiene_informacion(
+            unidad.get(
+                "Ziga_Talleres.Folio"
+            )
+        )
+    ),
+
+    (
+        "🚨 Siniestro",
+        tiene_informacion(
+            unidad.get(
+                "Siniestro"
+            )
+        )
+    ),
+
+    (
+        "📦 Refacciones",
+        bool(
+            grupos_refacciones
+        )
+    ),
 ]
 
+
 total_abiertos = sum(
-    1 for _, activo in folios_resumen if activo
+    1
+    for _, activo
+    in folios_resumen
+    if activo
 )
 
+
 chips_html = "".join(
-    f'<span class="chip {"chip-on" if activo else "chip-off"}">'
-    f'<span class="chip-punto"></span>{nombre}</span>'
-    for nombre, activo in folios_resumen
+    f'<span class="chip '
+    f'{"chip-on" if activo else "chip-off"}">'
+    f'<span class="chip-punto"></span>'
+    f'{nombre}'
+    f'</span>'
+    for nombre, activo
+    in folios_resumen
 )
+
 
 titulo_seccion(
     f"🚦 Resumen de folios abiertos ({total_abiertos})"
 )
 
+
 st.markdown(
-    f'<div class="resumen">{chips_html}</div>',
+    f'<div class="resumen">'
+    f'{chips_html}'
+    f'</div>',
     unsafe_allow_html=True
 )
 
@@ -1479,13 +1654,43 @@ st.markdown(
 # INFORMACIÓN GENERAL
 # =========================================================
 
-titulo_seccion("📋 Información general")
+titulo_seccion(
+    "📋 Información general"
+)
+
 
 mostrar_tarjetas([
-    ("t", "LÍNEA", valor_visible(unidad.get("LINEA"))),
-    ("t", "MODELO", modelo_visible(unidad.get("MODELO"))),
-    ("b", "ESTATUS", valor_visible(unidad.get("ESTATUS"))),
-    ("t", "SUBESTATUS", valor_visible(unidad.get("SUBESTATUS"))),
+    (
+        "t",
+        "LÍNEA",
+        valor_visible(
+            unidad.get("LINEA")
+        )
+    ),
+
+    (
+        "t",
+        "MODELO",
+        modelo_visible(
+            unidad.get("MODELO")
+        )
+    ),
+
+    (
+        "b",
+        "ESTATUS",
+        valor_visible(
+            unidad.get("ESTATUS")
+        )
+    ),
+
+    (
+        "t",
+        "SUBESTATUS",
+        valor_visible(
+            unidad.get("SUBESTATUS")
+        )
+    ),
 ])
 
 
@@ -1493,18 +1698,41 @@ mostrar_tarjetas([
 # DATOS DE LA UNIDAD
 # =========================================================
 
-titulo_seccion("🚘 Datos de la unidad")
+titulo_seccion(
+    "🚘 Datos de la unidad"
+)
+
 
 mostrar_tarjetas([
-    ("t", "NOMBRE DEL CLIENTE", valor_visible(unidad.get("NOMBRE DEL CLIENTE"))),
-    ("t", "ALMACÉN", valor_visible(unidad.get("ALMACÉN"))),
-    ("t", "UNIDAD DE NEGOCIO", valor_visible(unidad.get("UNIDAD NEGOCIO"))),
-])
+    (
+        "t",
+        "NOMBRE DEL CLIENTE",
+        valor_visible(
+            unidad.get(
+                "NOMBRE DEL CLIENTE"
+            )
+        )
+    ),
 
-mostrar_tarjetas([
-    ("t", "GPS", valor_visible(unidad.get("GPS"))),
-    ("t", "PLATAFORMA", valor_visible(unidad.get("PLATAFORMA"))),
-    ("t", "¿REPORTA?", valor_visible(unidad.get("¿REPORTA?"))),
+    (
+        "t",
+        "ALMACÉN",
+        valor_visible(
+            unidad.get(
+                "ALMACÉN"
+            )
+        )
+    ),
+
+    (
+        "t",
+        "UNIDAD DE NEGOCIO",
+        valor_visible(
+            unidad.get(
+                "UNIDAD NEGOCIO"
+            )
+        )
+    ),
 ])
 
 
@@ -1519,7 +1747,11 @@ hay_folio_abierto = False
 # GESTORÍA
 # =========================================================
 
-if tiene_informacion(unidad.get("Gestorías1.Folio")):
+if tiene_informacion(
+    unidad.get(
+        "Gestorías1.Folio"
+    )
+):
 
     hay_folio_abierto = True
 
@@ -1528,20 +1760,74 @@ if tiene_informacion(unidad.get("Gestorías1.Folio")):
     titulo_seccion(
         "📋 Gestoría",
         dias_numero_o_none(
-            unidad.get("Gestorías1.Personalizado")
+            unidad.get(
+                "Gestorías1.Personalizado"
+            )
         )
     )
 
     mostrar_tarjetas([
-        ("t", "FOLIO", valor_visible(unidad.get("Gestorías1.Folio"))),
-        ("b", "ESTATUS DE PÓLIZA", valor_visible(unidad.get("Estatus poliza"))),
-        ("t", "FECHA DE CREACIÓN", fecha_visible(unidad.get("Gestorías1.Fecha de creación"))),
+        (
+            "t",
+            "FOLIO",
+            valor_visible(
+                unidad.get(
+                    "Gestorías1.Folio"
+                )
+            )
+        ),
+
+        (
+            "b",
+            "ESTATUS DE PÓLIZA",
+            valor_visible(
+                unidad.get(
+                    "Estatus poliza"
+                )
+            )
+        ),
+
+        (
+            "t",
+            "FECHA DE CREACIÓN",
+            fecha_visible(
+                unidad.get(
+                    "Gestorías1.Fecha de creación"
+                )
+            )
+        ),
     ])
 
     mostrar_tarjetas([
-        ("b", "ESTADO DE ATENCIÓN", valor_visible(unidad.get("Gestorías1.Estado de atención"))),
-        ("t", "DÍAS", numero_entero(unidad.get("Gestorías1.Personalizado"))),
-        ("t", "CONCEPTOS", valor_visible(unidad.get("Gestorías1.Conceptos"))),
+        (
+            "b",
+            "ESTADO DE ATENCIÓN",
+            valor_visible(
+                unidad.get(
+                    "Gestorías1.Estado de atención"
+                )
+            )
+        ),
+
+        (
+            "t",
+            "DÍAS",
+            numero_entero(
+                unidad.get(
+                    "Gestorías1.Personalizado"
+                )
+            )
+        ),
+
+        (
+            "t",
+            "CONCEPTOS",
+            valor_visible(
+                unidad.get(
+                    "Gestorías1.Conceptos"
+                )
+            )
+        ),
     ])
 
 
@@ -1549,7 +1835,11 @@ if tiene_informacion(unidad.get("Gestorías1.Folio")):
 # MANTENIMIENTO
 # =========================================================
 
-if tiene_informacion(unidad.get("Mantenimiento.FOLIO")):
+if tiene_informacion(
+    unidad.get(
+        "Mantenimiento.FOLIO"
+    )
+):
 
     hay_folio_abierto = True
 
@@ -1558,19 +1848,64 @@ if tiene_informacion(unidad.get("Mantenimiento.FOLIO")):
     titulo_seccion(
         "🔧 Mantenimiento",
         dias_numero_o_none(
-            unidad.get("Mantenimiento.dias")
+            unidad.get(
+                "Mantenimiento.dias"
+            )
         )
     )
 
     mostrar_tarjetas([
-        ("t", "FOLIO", valor_visible(unidad.get("Mantenimiento.FOLIO"))),
-        ("t", "FECHA DE CREACIÓN", fecha_visible(unidad.get("Mantenimiento.FECHA DE CREACION DEL FOLIO"))),
-        ("b", "ESTATUS", valor_visible(unidad.get("Mantenimiento.ESTATUS DEL FOLIO"))),
+        (
+            "t",
+            "FOLIO",
+            valor_visible(
+                unidad.get(
+                    "Mantenimiento.FOLIO"
+                )
+            )
+        ),
+
+        (
+            "t",
+            "FECHA DE CREACIÓN",
+            fecha_visible(
+                unidad.get(
+                    "Mantenimiento.FECHA DE CREACION DEL FOLIO"
+                )
+            )
+        ),
+
+        (
+            "b",
+            "ESTATUS",
+            valor_visible(
+                unidad.get(
+                    "Mantenimiento.ESTATUS DEL FOLIO"
+                )
+            )
+        ),
     ])
 
     mostrar_tarjetas([
-        ("t", "PROVEEDOR", valor_visible(unidad.get("Mantenimiento.PROVEEDOR"))),
-        ("t", "DÍAS", numero_entero(unidad.get("Mantenimiento.dias"))),
+        (
+            "t",
+            "PROVEEDOR",
+            valor_visible(
+                unidad.get(
+                    "Mantenimiento.PROVEEDOR"
+                )
+            )
+        ),
+
+        (
+            "t",
+            "DÍAS",
+            numero_entero(
+                unidad.get(
+                    "Mantenimiento.dias"
+                )
+            )
+        ),
     ])
 
 
@@ -1578,7 +1913,11 @@ if tiene_informacion(unidad.get("Mantenimiento.FOLIO")):
 # ZIGA TALLERES
 # =========================================================
 
-if tiene_informacion(unidad.get("Ziga_Talleres.Folio")):
+if tiene_informacion(
+    unidad.get(
+        "Ziga_Talleres.Folio"
+    )
+):
 
     hay_folio_abierto = True
 
@@ -1587,19 +1926,64 @@ if tiene_informacion(unidad.get("Ziga_Talleres.Folio")):
     titulo_seccion(
         "🛠️ Ziga Talleres",
         dias_numero_o_none(
-            unidad.get("Ziga_Talleres.dias")
+            unidad.get(
+                "Ziga_Talleres.dias"
+            )
         )
     )
 
     mostrar_tarjetas([
-        ("t", "FOLIO", valor_visible(unidad.get("Ziga_Talleres.Folio"))),
-        ("b", "ESTATUS", valor_visible(unidad.get("Ziga_Talleres.Estatus"))),
-        ("t", "ÁREA DEL TALLER ACTIVA", valor_visible(unidad.get("Ziga_Talleres.Área del taller activa"))),
+        (
+            "t",
+            "FOLIO",
+            valor_visible(
+                unidad.get(
+                    "Ziga_Talleres.Folio"
+                )
+            )
+        ),
+
+        (
+            "b",
+            "ESTATUS",
+            valor_visible(
+                unidad.get(
+                    "Ziga_Talleres.Estatus"
+                )
+            )
+        ),
+
+        (
+            "t",
+            "ÁREA DEL TALLER ACTIVA",
+            valor_visible(
+                unidad.get(
+                    "Ziga_Talleres.Área del taller activa"
+                )
+            )
+        ),
     ])
 
     mostrar_tarjetas([
-        ("t", "FECHA DE INGRESO", fecha_visible(unidad.get("Ziga_Talleres.Fecha de ingreso"))),
-        ("t", "DÍAS", numero_entero(unidad.get("Ziga_Talleres.dias"))),
+        (
+            "t",
+            "FECHA DE INGRESO",
+            fecha_visible(
+                unidad.get(
+                    "Ziga_Talleres.Fecha de ingreso"
+                )
+            )
+        ),
+
+        (
+            "t",
+            "DÍAS",
+            numero_entero(
+                unidad.get(
+                    "Ziga_Talleres.dias"
+                )
+            )
+        ),
     ])
 
 
@@ -1607,7 +1991,11 @@ if tiene_informacion(unidad.get("Ziga_Talleres.Folio")):
 # SINIESTRO
 # =========================================================
 
-if tiene_informacion(unidad.get("Siniestro")):
+if tiene_informacion(
+    unidad.get(
+        "Siniestro"
+    )
+):
 
     hay_folio_abierto = True
 
@@ -1616,19 +2004,64 @@ if tiene_informacion(unidad.get("Siniestro")):
     titulo_seccion(
         "🚨 Siniestro",
         dias_numero_o_none(
-            unidad.get("Siniestros2.dias")
+            unidad.get(
+                "Siniestros2.dias"
+            )
         )
     )
 
     mostrar_tarjetas([
-        ("t", "CATEGORÍA", valor_visible(unidad.get("Siniestros2.CATEGORIA"))),
-        ("t", "ETAPA", valor_visible(unidad.get("Siniestros2.ETAPA"))),
-        ("t", "DÍAS", numero_entero(unidad.get("Siniestros2.dias"))),
+        (
+            "t",
+            "CATEGORÍA",
+            valor_visible(
+                unidad.get(
+                    "Siniestros2.CATEGORIA"
+                )
+            )
+        ),
+
+        (
+            "t",
+            "ETAPA",
+            valor_visible(
+                unidad.get(
+                    "Siniestros2.ETAPA"
+                )
+            )
+        ),
+
+        (
+            "t",
+            "DÍAS",
+            numero_entero(
+                unidad.get(
+                    "Siniestros2.dias"
+                )
+            )
+        ),
     ])
 
     mostrar_tarjetas([
-        ("t", "FECHA DE APERTURA", fecha_visible(unidad.get("Siniestros2.FECHA APERTURA"))),
-        ("t", "FECHA DEL SINIESTRO", fecha_visible(unidad.get("Siniestros2.FECHA SINIESTRO"))),
+        (
+            "t",
+            "FECHA DE APERTURA",
+            fecha_visible(
+                unidad.get(
+                    "Siniestros2.FECHA APERTURA"
+                )
+            )
+        ),
+
+        (
+            "t",
+            "FECHA DEL SINIESTRO",
+            fecha_visible(
+                unidad.get(
+                    "Siniestros2.FECHA SINIESTRO"
+                )
+            )
+        ),
     ])
 
 
@@ -1642,7 +2075,9 @@ if grupos_refacciones:
 
     separador()
 
-    titulo_seccion("📦 Refacciones pendientes")
+    titulo_seccion(
+        "📦 Refacciones pendientes"
+    )
 
     for folio, actividades in grupos_refacciones:
 
@@ -1654,8 +2089,13 @@ if grupos_refacciones:
         st.markdown(
             f"""
 <div class="refaccion-card">
-<div class="refaccion-folio">FOLIO WS: {folio}</div>
-<div class="refaccion-actividad">{actividades_html}</div>
+<div class="refaccion-folio">
+FOLIO WS: {folio}
+</div>
+
+<div class="refaccion-actividad">
+{actividades_html}
+</div>
 </div>
 """,
             unsafe_allow_html=True
@@ -1691,9 +2131,12 @@ ficha_df = pd.DataFrame({
     "VALOR": ficha_serie.astype(str).values
 })
 
+
 st.download_button(
     "⬇️ Descargar ficha de la unidad (CSV)",
-    data=ficha_df.to_csv(index=False).encode("utf-8-sig"),
+    data=ficha_df.to_csv(
+        index=False
+    ).encode("utf-8-sig"),
     file_name=f"ficha_{placa}.csv",
     mime="text/csv"
 )
