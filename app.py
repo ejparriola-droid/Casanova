@@ -514,15 +514,6 @@ div[data-baseweb="popover"] li:hover {{
     color: {AZUL_MARINO};
 }}
 
-/* CÁMARA */
-div[data-testid="stCameraInput"] {{
-    margin-top: 0;
-}}
-
-div[data-testid="stCameraInput"] button {{
-    border-radius: 12px !important;
-}}
-
 /* CELULAR */
 @media (max-width: 768px) {{
     .topbar-titulo {{ font-size: 18px; }}
@@ -1083,23 +1074,19 @@ if "msg_foto" not in st.session_state:
 
 
 # ---------------------------------------------------------
-# ELEGIR CÓMO BUSCAR (la cámara NO se enciende sola)
+# BUSCAR CON FOTO (solo cuando el usuario lo activa)
+# En el celular permite elegir de la galería o tomar la
+# foto con la cámara trasera.
 # ---------------------------------------------------------
-
-OPCION_ESCRIBIR = "⌨️ Escribir"
-OPCION_ARCHIVO = "🖼️ Galería / cámara trasera"
-OPCION_CAMARA = "📸 Cámara de la página"
-
-modo = st.radio(
-    "¿Cómo quieres buscar?",
-    [OPCION_ESCRIBIR, OPCION_ARCHIVO, OPCION_CAMARA],
-    horizontal=True,
-    label_visibility="collapsed"
-)
 
 foto = None
 
-if modo == OPCION_ARCHIVO:
+usar_foto = st.toggle(
+    "📷 Buscar con foto (galería o cámara trasera)",
+    value=False
+)
+
+if usar_foto:
 
     foto = st.file_uploader(
         "Selecciona una foto o toma una nueva",
@@ -1107,15 +1094,8 @@ if modo == OPCION_ARCHIVO:
     )
 
     st.caption(
-        "En el celular, al pulsar el botón puedes elegir "
+        "En el celular, al pulsar el botón elige "
         "'Galería' o 'Tomar foto' (cámara trasera)."
-    )
-
-elif modo == OPCION_CAMARA:
-
-    foto = st.camera_input(
-        "Tomar foto",
-        label_visibility="collapsed"
     )
 
 
