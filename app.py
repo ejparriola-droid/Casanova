@@ -8,8 +8,7 @@ from pathlib import Path
 # =========================================================
 
 st.set_page_config(
-    page_title="Casanova | Control de Unidades
-    Centenario / Lala",
+    page_title="Casanova | Control de Unidades | Centenario / Lala",
     page_icon="🚗",
     layout="wide"
 )
@@ -49,8 +48,8 @@ BLANCO = "#FFFFFF"
 # SEMÁFORO DE DÍAS (ajusta estos números a tu operación)
 # =========================================================
 
-DIAS_AMBAR = 30    # desde aquí: amarillo (requiere atención)
-DIAS_ROJO = 60     # desde aquí: rojo (crítico)
+DIAS_AMBAR = 30
+DIAS_ROJO = 60
 
 
 # =========================================================
@@ -341,7 +340,6 @@ header {{visibility: hidden;}}
    INPUTS Y BOTONES
    ================================================= */
 
-/* Etiquetas (Usuario, Contraseña, etc.) */
 .stTextInput label,
 .stTextInput label p,
 .stSelectbox label,
@@ -351,14 +349,12 @@ header {{visibility: hidden;}}
     font-size: 15px !important;
 }}
 
-/* Contenedor del input (incluye el ojito) */
 .stTextInput div[data-baseweb="input"],
 .stTextInput div[data-baseweb="base-input"] {{
     background: white !important;
     border-radius: 12px !important;
 }}
 
-/* Texto que escribe el usuario */
 .stTextInput input {{
     color: #172033 !important;
     -webkit-text-fill-color: #172033 !important;
@@ -371,7 +367,6 @@ header {{visibility: hidden;}}
     font-weight: 700 !important;
 }}
 
-/* Placeholder */
 .stTextInput input::placeholder {{
     color: #64748B !important;
     -webkit-text-fill-color: #64748B !important;
@@ -384,7 +379,6 @@ header {{visibility: hidden;}}
     box-shadow: 0 0 0 3px rgba(0,72,118,0.12) !important;
 }}
 
-/* Botón del ojito (mostrar contraseña) */
 .stTextInput button {{
     background: white !important;
     color: {AZUL_MARINO} !important;
@@ -396,7 +390,6 @@ header {{visibility: hidden;}}
     color: {AZUL_MARINO} !important;
 }}
 
-/* Selectbox */
 .stSelectbox div[data-baseweb="select"] > div {{
     background: white !important;
     color: #172033 !important;
@@ -409,7 +402,6 @@ header {{visibility: hidden;}}
     font-weight: 700 !important;
 }}
 
-/* Lista desplegable del selectbox */
 div[data-baseweb="popover"] ul,
 div[data-baseweb="popover"] li {{
     background: white !important;
@@ -421,7 +413,6 @@ div[data-baseweb="popover"] li:hover {{
     background: #EEF3FA !important;
 }}
 
-/* Botones */
 .stButton > button {{
     border-radius: 12px;
     font-weight: 700;
@@ -954,11 +945,6 @@ def tarjeta_badge(campo, valor):
 
 
 def mostrar_tarjetas(items):
-    """
-    items = lista de (tipo, campo, valor)
-    tipo: "t" = tarjeta normal, "b" = tarjeta con badge
-    Cada llamada dibuja una fila de columnas.
-    """
 
     columnas = st.columns(len(items))
 
@@ -1479,7 +1465,9 @@ chips_html = "".join(
     for nombre, activo in folios_resumen
 )
 
-titulo_seccion(f"🚦 Resumen de folios abiertos ({total_abiertos})")
+titulo_seccion(
+    f"🚦 Resumen de folios abiertos ({total_abiertos})"
+)
 
 st.markdown(
     f'<div class="resumen">{chips_html}</div>',
@@ -1537,7 +1525,12 @@ if tiene_informacion(unidad.get("Gestorías1.Folio")):
 
     separador()
 
-    titulo_seccion("📋 Gestoría", dias_numero_o_none(unidad.get("Gestorías1.Personalizado")))
+    titulo_seccion(
+        "📋 Gestoría",
+        dias_numero_o_none(
+            unidad.get("Gestorías1.Personalizado")
+        )
+    )
 
     mostrar_tarjetas([
         ("t", "FOLIO", valor_visible(unidad.get("Gestorías1.Folio"))),
@@ -1562,7 +1555,12 @@ if tiene_informacion(unidad.get("Mantenimiento.FOLIO")):
 
     separador()
 
-    titulo_seccion("🔧 Mantenimiento", dias_numero_o_none(unidad.get("Mantenimiento.dias")))
+    titulo_seccion(
+        "🔧 Mantenimiento",
+        dias_numero_o_none(
+            unidad.get("Mantenimiento.dias")
+        )
+    )
 
     mostrar_tarjetas([
         ("t", "FOLIO", valor_visible(unidad.get("Mantenimiento.FOLIO"))),
@@ -1586,7 +1584,12 @@ if tiene_informacion(unidad.get("Ziga_Talleres.Folio")):
 
     separador()
 
-    titulo_seccion("🛠️ Ziga Talleres", dias_numero_o_none(unidad.get("Ziga_Talleres.dias")))
+    titulo_seccion(
+        "🛠️ Ziga Talleres",
+        dias_numero_o_none(
+            unidad.get("Ziga_Talleres.dias")
+        )
+    )
 
     mostrar_tarjetas([
         ("t", "FOLIO", valor_visible(unidad.get("Ziga_Talleres.Folio"))),
@@ -1610,7 +1613,12 @@ if tiene_informacion(unidad.get("Siniestro")):
 
     separador()
 
-    titulo_seccion("🚨 Siniestro", dias_numero_o_none(unidad.get("Siniestros2.dias")))
+    titulo_seccion(
+        "🚨 Siniestro",
+        dias_numero_o_none(
+            unidad.get("Siniestros2.dias")
+        )
+    )
 
     mostrar_tarjetas([
         ("t", "CATEGORÍA", valor_visible(unidad.get("Siniestros2.CATEGORIA"))),
