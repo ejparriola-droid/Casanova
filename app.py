@@ -45,7 +45,7 @@ BLANCO = "#FFFFFF"
 
 
 # =========================================================
-# ESTILO GLOBAL (se aplica también en el login)
+# ESTILO GLOBAL
 # =========================================================
 
 def aplicar_estilo():
@@ -62,6 +62,11 @@ html, body, [class*="css"], .stApp {{
 
 .stApp {{
     background: linear-gradient(180deg, #EEF3FA 0%, #F7F9FC 280px);
+}}
+
+/* Todo el texto en negritas */
+.stApp p, .stApp span, .stApp label, .stMarkdown {{
+    font-weight: 600;
 }}
 
 /* Ocultar elementos de Streamlit */
@@ -106,8 +111,9 @@ header {{visibility: hidden;}}
 }}
 
 .topbar-sub {{
-    color: rgba(255,255,255,0.75);
+    color: rgba(255,255,255,0.8);
     font-size: 13px;
+    font-weight: 600;
     margin-top: 3px;
 }}
 
@@ -150,7 +156,7 @@ header {{visibility: hidden;}}
 .campo {{
     color: #7A879B;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: 0.8px;
     text-transform: uppercase;
     margin-bottom: 6px;
@@ -159,14 +165,14 @@ header {{visibility: hidden;}}
 .valor {{
     color: #172033;
     font-size: 16px;
-    font-weight: 700;
+    font-weight: 800;
     word-break: break-word;
     line-height: 1.3;
 }}
 
 .valor-vacio {{
     color: #A7B1C2;
-    font-weight: 500;
+    font-weight: 600;
     font-style: italic;
 }}
 
@@ -179,7 +185,7 @@ header {{visibility: hidden;}}
     padding: 4px 12px;
     border-radius: 20px;
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 800;
 }}
 
 .badge-verde {{ background: #E3F6EA; color: #167A3E; }}
@@ -188,7 +194,7 @@ header {{visibility: hidden;}}
 .badge-azul {{ background: #E3ECF9; color: {AZUL_MARINO}; }}
 
 /* =================================================
-   KPIs (TOTAL Y DÍAS EN PISO)
+   KPIs
    ================================================= */
 
 .kpi-azul {{
@@ -211,7 +217,7 @@ header {{visibility: hidden;}}
 
 .kpi-label {{
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: 1px;
     text-transform: uppercase;
     opacity: 0.9;
@@ -258,14 +264,14 @@ header {{visibility: hidden;}}
 .unidad-serie-label {{
     color: #7A879B;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: 0.8px;
 }}
 
 .unidad-serie {{
     color: {AZUL_MARINO};
     font-size: 17px;
-    font-weight: 700;
+    font-weight: 800;
     word-break: break-all;
 }}
 
@@ -294,7 +300,7 @@ header {{visibility: hidden;}}
 .refaccion-actividad {{
     color: #172033;
     font-size: 14.5px;
-    font-weight: 500;
+    font-weight: 600;
     line-height: 1.7;
 }}
 
@@ -308,7 +314,7 @@ header {{visibility: hidden;}}
     border-radius: 12px;
     padding: 15px 18px;
     color: #167A3E;
-    font-weight: 700;
+    font-weight: 800;
     margin-top: 24px;
 }}
 
@@ -326,12 +332,42 @@ header {{visibility: hidden;}}
    INPUTS Y BOTONES
    ================================================= */
 
+/* Etiquetas (Usuario, Contraseña, etc.) */
+.stTextInput label,
+.stTextInput label p,
+.stSelectbox label,
+.stSelectbox label p {{
+    color: {AZUL_MARINO} !important;
+    font-weight: 800 !important;
+    font-size: 15px !important;
+}}
+
+/* Contenedor del input (incluye el ojito) */
+.stTextInput div[data-baseweb="input"],
+.stTextInput div[data-baseweb="base-input"] {{
+    background: white !important;
+    border-radius: 12px !important;
+}}
+
+/* Texto que escribe el usuario */
 .stTextInput input {{
+    color: #172033 !important;
+    -webkit-text-fill-color: #172033 !important;
+    caret-color: {AZUL_MARINO} !important;
+    background: white !important;
     border-radius: 12px !important;
     border: 2px solid #D8E1EF !important;
     padding: 12px 16px !important;
     font-size: 16px !important;
-    background: white !important;
+    font-weight: 700 !important;
+}}
+
+/* Placeholder */
+.stTextInput input::placeholder {{
+    color: #64748B !important;
+    -webkit-text-fill-color: #64748B !important;
+    font-weight: 600 !important;
+    opacity: 1 !important;
 }}
 
 .stTextInput input:focus {{
@@ -339,6 +375,44 @@ header {{visibility: hidden;}}
     box-shadow: 0 0 0 3px rgba(0,72,118,0.12) !important;
 }}
 
+/* Botón del ojito (mostrar contraseña) */
+.stTextInput button {{
+    background: white !important;
+    color: {AZUL_MARINO} !important;
+    border: none !important;
+}}
+
+.stTextInput button svg {{
+    fill: {AZUL_MARINO} !important;
+    color: {AZUL_MARINO} !important;
+}}
+
+/* Selectbox */
+.stSelectbox div[data-baseweb="select"] > div {{
+    background: white !important;
+    color: #172033 !important;
+    border-radius: 12px !important;
+}}
+
+.stSelectbox div[data-baseweb="select"] span,
+.stSelectbox div[data-baseweb="select"] div {{
+    color: #172033 !important;
+    font-weight: 700 !important;
+}}
+
+/* Lista desplegable del selectbox */
+div[data-baseweb="popover"] ul,
+div[data-baseweb="popover"] li {{
+    background: white !important;
+    color: #172033 !important;
+    font-weight: 600 !important;
+}}
+
+div[data-baseweb="popover"] li:hover {{
+    background: #EEF3FA !important;
+}}
+
+/* Botones */
 .stButton > button {{
     border-radius: 12px;
     font-weight: 700;
@@ -358,17 +432,13 @@ header {{visibility: hidden;}}
     background: {AMARILLO};
 }}
 
-.stSelectbox > div > div {{
-    border-radius: 12px !important;
-}}
-
 /* =================================================
    LOGIN
    ================================================= */
 
 .login-box {{
     max-width: 430px;
-    margin: 50px auto 10px auto;
+    margin: 50px auto 24px auto;
     background: white;
     padding: 34px 30px 26px 30px;
     border-radius: 20px;
@@ -390,6 +460,7 @@ header {{visibility: hidden;}}
 .login-subtitle {{
     color: #64748B;
     font-size: 14px;
+    font-weight: 600;
     margin-top: 4px;
 }}
 
@@ -676,7 +747,7 @@ def normalizar_texto(valor):
 
 
 # ---------------------------------------------------------
-# TARJETA (ahora con estilo para "Sin información")
+# TARJETAS
 # ---------------------------------------------------------
 
 def tarjeta(campo, valor):
@@ -694,10 +765,6 @@ def tarjeta(campo, valor):
 </div>
 """
 
-
-# ---------------------------------------------------------
-# TARJETA CON BADGE (para estatus)
-# ---------------------------------------------------------
 
 def tarjeta_badge(campo, valor):
 
@@ -737,6 +804,33 @@ def tarjeta_badge(campo, valor):
 <div class="valor"><span class="badge {clase}">{valor}</span></div>
 </div>
 """
+
+
+def mostrar_tarjetas(items):
+    """
+    items = lista de (tipo, campo, valor)
+    tipo: "t" = tarjeta normal, "b" = tarjeta con badge
+    Cada llamada dibuja una fila de columnas.
+    """
+
+    columnas = st.columns(len(items))
+
+    for col, (tipo, campo, valor) in zip(columnas, items):
+
+        with col:
+
+            if tipo == "b":
+
+                html = tarjeta_badge(campo, valor)
+
+            else:
+
+                html = tarjeta(campo, valor)
+
+            st.markdown(
+                html,
+                unsafe_allow_html=True
+            )
 
 
 def titulo_seccion(texto):
@@ -1024,7 +1118,7 @@ else:
 
 
 # =========================================================
-# KPIs: TOTAL + DÍAS EN PISO (LADO A LADO)
+# KPIs: TOTAL + DÍAS EN PISO
 # =========================================================
 
 col1, col2 = st.columns(2)
@@ -1078,60 +1172,12 @@ st.markdown(
 
 titulo_seccion("📋 Información general")
 
-
-col1, col2, col3, col4 = st.columns(4)
-
-
-with col1:
-
-    st.markdown(
-        tarjeta(
-            "LÍNEA",
-            valor_visible(
-                unidad.get("LINEA")
-            )
-        ),
-        unsafe_allow_html=True
-    )
-
-
-with col2:
-
-    st.markdown(
-        tarjeta(
-            "MODELO",
-            modelo_visible(
-                unidad.get("MODELO")
-            )
-        ),
-        unsafe_allow_html=True
-    )
-
-
-with col3:
-
-    st.markdown(
-        tarjeta_badge(
-            "ESTATUS",
-            valor_visible(
-                unidad.get("ESTATUS")
-            )
-        ),
-        unsafe_allow_html=True
-    )
-
-
-with col4:
-
-    st.markdown(
-        tarjeta(
-            "SUBESTATUS",
-            valor_visible(
-                unidad.get("SUBESTATUS")
-            )
-        ),
-        unsafe_allow_html=True
-    )
+mostrar_tarjetas([
+    ("t", "LÍNEA", valor_visible(unidad.get("LINEA"))),
+    ("t", "MODELO", modelo_visible(unidad.get("MODELO"))),
+    ("b", "ESTATUS", valor_visible(unidad.get("ESTATUS"))),
+    ("t", "SUBESTATUS", valor_visible(unidad.get("SUBESTATUS"))),
+])
 
 
 # =========================================================
@@ -1140,101 +1186,17 @@ with col4:
 
 titulo_seccion("🚘 Datos de la unidad")
 
+mostrar_tarjetas([
+    ("t", "NOMBRE DEL CLIENTE", valor_visible(unidad.get("NOMBRE DEL CLIENTE"))),
+    ("t", "ALMACÉN", valor_visible(unidad.get("ALMACÉN"))),
+    ("t", "UNIDAD DE NEGOCIO", valor_visible(unidad.get("UNIDAD NEGOCIO"))),
+])
 
-col1, col2, col3 = st.columns(3)
-
-
-with col1:
-
-    st.markdown(
-        tarjeta(
-            "NOMBRE DEL CLIENTE",
-            valor_visible(
-                unidad.get(
-                    "NOMBRE DEL CLIENTE"
-                )
-            )
-        ),
-        unsafe_allow_html=True
-    )
-
-
-with col2:
-
-    st.markdown(
-        tarjeta(
-            "ALMACÉN",
-            valor_visible(
-                unidad.get(
-                    "ALMACÉN"
-                )
-            )
-        ),
-        unsafe_allow_html=True
-    )
-
-
-with col3:
-
-    st.markdown(
-        tarjeta(
-            "UNIDAD DE NEGOCIO",
-            valor_visible(
-                unidad.get(
-                    "UNIDAD NEGOCIO"
-                )
-            )
-        ),
-        unsafe_allow_html=True
-    )
-
-
-col1, col2, col3 = st.columns(3)
-
-
-with col1:
-
-    st.markdown(
-        tarjeta(
-            "GPS",
-            valor_visible(
-                unidad.get(
-                    "GPS"
-                )
-            )
-        ),
-        unsafe_allow_html=True
-    )
-
-
-with col2:
-
-    st.markdown(
-        tarjeta(
-            "PLATAFORMA",
-            valor_visible(
-                unidad.get(
-                    "PLATAFORMA"
-                )
-            )
-        ),
-        unsafe_allow_html=True
-    )
-
-
-with col3:
-
-    st.markdown(
-        tarjeta(
-            "¿REPORTA?",
-            valor_visible(
-                unidad.get(
-                    "¿REPORTA?"
-                )
-            )
-        ),
-        unsafe_allow_html=True
-    )
+mostrar_tarjetas([
+    ("t", "GPS", valor_visible(unidad.get("GPS"))),
+    ("t", "PLATAFORMA", valor_visible(unidad.get("PLATAFORMA"))),
+    ("t", "¿REPORTA?", valor_visible(unidad.get("¿REPORTA?"))),
+])
 
 
 # =========================================================
@@ -1248,12 +1210,7 @@ hay_folio_abierto = False
 # GESTORÍA
 # =========================================================
 
-folio_gestoria = unidad.get(
-    "Gestorías1.Folio"
-)
-
-
-if tiene_informacion(folio_gestoria):
+if tiene_informacion(unidad.get("Gestorías1.Folio")):
 
     hay_folio_abierto = True
 
@@ -1261,105 +1218,24 @@ if tiene_informacion(folio_gestoria):
 
     titulo_seccion("📋 Gestoría")
 
-    col1, col2, col3 = st.columns(3)
+    mostrar_tarjetas([
+        ("t", "FOLIO", valor_visible(unidad.get("Gestorías1.Folio"))),
+        ("b", "ESTATUS DE PÓLIZA", valor_visible(unidad.get("Estatus poliza"))),
+        ("t", "FECHA DE CREACIÓN", fecha_visible(unidad.get("Gestorías1.Fecha de creación"))),
+    ])
 
-    with col1:
-
-        st.markdown(
-            tarjeta(
-                "FOLIO",
-                valor_visible(
-                    unidad.get(
-                        "Gestorías1.Folio"
-                    )
-                )
-            ),
-            unsafe_allow_html=True
-        )
-
-    with col2:
-
-        st.markdown(
-            tarjeta_badge(
-                "ESTATUS DE PÓLIZA",
-                valor_visible(
-                    unidad.get(
-                        "Estatus poliza"
-                    )
-                )
-            ),
-            unsafe_allow_html=True
-        )
-
-    with col3:
-
-        st.markdown(
-            tarjeta(
-                "FECHA DE CREACIÓN",
-                fecha_visible(
-                    unidad.get(
-                        "Gestorías1.Fecha de creación"
-                    )
-                )
-            ),
-            unsafe_allow_html=True
-        )
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-
-        st.markdown(
-            tarjeta_badge(
-                "ESTADO DE ATENCIÓN",
-                valor_visible(
-                    unidad.get(
-                        "Gestorías1.Estado de atención"
-                    )
-                )
-            ),
-            unsafe_allow_html=True
-        )
-
-    with col2:
-
-        st.markdown(
-            tarjeta(
-                "DÍAS",
-                numero_entero(
-                    unidad.get(
-                        "Gestorías1.Personalizado"
-                    )
-                )
-            ),
-            unsafe_allow_html=True
-        )
-
-    with col3:
-
-        st.markdown(
-            tarjeta(
-                "CONCEPTOS",
-                valor_visible(
-                    unidad.get(
-                        "Gestorías1.Conceptos"
-                    )
-                )
-            ),
-            unsafe_allow_html=True
-        )
+    mostrar_tarjetas([
+        ("b", "ESTADO DE ATENCIÓN", valor_visible(unidad.get("Gestorías1.Estado de atención"))),
+        ("t", "DÍAS", numero_entero(unidad.get("Gestorías1.Personalizado"))),
+        ("t", "CONCEPTOS", valor_visible(unidad.get("Gestorías1.Conceptos"))),
+    ])
 
 
 # =========================================================
 # MANTENIMIENTO
 # =========================================================
 
-folio_mantenimiento = unidad.get(
-    "Mantenimiento.FOLIO"
-)
-
-
-if tiene_informacion(folio_mantenimiento):
+if tiene_informacion(unidad.get("Mantenimiento.FOLIO")):
 
     hay_folio_abierto = True
 
@@ -1367,91 +1243,23 @@ if tiene_informacion(folio_mantenimiento):
 
     titulo_seccion("🔧 Mantenimiento")
 
-    col1, col2, col3 = st.columns(3)
+    mostrar_tarjetas([
+        ("t", "FOLIO", valor_visible(unidad.get("Mantenimiento.FOLIO"))),
+        ("t", "FECHA DE CREACIÓN", fecha_visible(unidad.get("Mantenimiento.FECHA DE CREACION DEL FOLIO"))),
+        ("b", "ESTATUS", valor_visible(unidad.get("Mantenimiento.ESTATUS DEL FOLIO"))),
+    ])
 
-    with col1:
-
-        st.markdown(
-            tarjeta(
-                "FOLIO",
-                valor_visible(
-                    unidad.get(
-                        "Mantenimiento.FOLIO"
-                    )
-                )
-            ),
-            unsafe_allow_html=True
-        )
-
-    with col2:
-
-        st.markdown(
-            tarjeta(
-                "FECHA DE CREACIÓN",
-                fecha_visible(
-                    unidad.get(
-                        "Mantenimiento.FECHA DE CREACION DEL FOLIO"
-                    )
-                )
-            ),
-            unsafe_allow_html=True
-        )
-
-    with col3:
-
-        st.markdown(
-            tarjeta_badge(
-                "ESTATUS",
-                valor_visible(
-                    unidad.get(
-                        "Mantenimiento.ESTATUS DEL FOLIO"
-                    )
-                )
-            ),
-            unsafe_allow_html=True
-        )
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-
-        st.markdown(
-            tarjeta(
-                "PROVEEDOR",
-                valor_visible(
-                    unidad.get(
-                        "Mantenimiento.PROVEEDOR"
-                    )
-                )
-            ),
-            unsafe_allow_html=True
-        )
-
-    with col2:
-
-        st.markdown(
-            tarjeta(
-                "DÍAS",
-                numero_entero(
-                    unidad.get(
-                        "Mantenimiento.dias"
-                    )
-                )
-            ),
-            unsafe_allow_html=True
-        )
+    mostrar_tarjetas([
+        ("t", "PROVEEDOR", valor_visible(unidad.get("Mantenimiento.PROVEEDOR"))),
+        ("t", "DÍAS", numero_entero(unidad.get("Mantenimiento.dias"))),
+    ])
 
 
 # =========================================================
 # ZIGA TALLERES
 # =========================================================
 
-folio_ziga = unidad.get(
-    "Ziga_Talleres.Folio"
-)
-
-
-if tiene_informacion(folio_ziga):
+if tiene_informacion(unidad.get("Ziga_Talleres.Folio")):
 
     hay_folio_abierto = True
 
@@ -1459,91 +1267,23 @@ if tiene_informacion(folio_ziga):
 
     titulo_seccion("🛠️ Ziga Talleres")
 
-    col1, col2, col3 = st.columns(3)
+    mostrar_tarjetas([
+        ("t", "FOLIO", valor_visible(unidad.get("Ziga_Talleres.Folio"))),
+        ("b", "ESTATUS", valor_visible(unidad.get("Ziga_Talleres.Estatus"))),
+        ("t", "ÁREA DEL TALLER ACTIVA", valor_visible(unidad.get("Ziga_Talleres.Área del taller activa"))),
+    ])
 
-    with col1:
-
-        st.markdown(
-            tarjeta(
-                "FOLIO",
-                valor_visible(
-                    unidad.get(
-                        "Ziga_Talleres.Folio"
-                    )
-                )
-            ),
-            unsafe_allow_html=True
-        )
-
-    with col2:
-
-        st.markdown(
-            tarjeta_badge(
-                "ESTATUS",
-                valor_visible(
-                    unidad.get(
-                        "Ziga_Talleres.Estatus"
-                    )
-                )
-            ),
-            unsafe_allow_html=True
-        )
-
-    with col3:
-
-        st.markdown(
-            tarjeta(
-                "ÁREA DEL TALLER ACTIVA",
-                valor_visible(
-                    unidad.get(
-                        "Ziga_Talleres.Área del taller activa"
-                    )
-                )
-            ),
-            unsafe_allow_html=True
-        )
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-
-        st.markdown(
-            tarjeta(
-                "FECHA DE INGRESO",
-                fecha_visible(
-                    unidad.get(
-                        "Ziga_Talleres.Fecha de ingreso"
-                    )
-                )
-            ),
-            unsafe_allow_html=True
-        )
-
-    with col2:
-
-        st.markdown(
-            tarjeta(
-                "DÍAS",
-                numero_entero(
-                    unidad.get(
-                        "Ziga_Talleres.dias"
-                    )
-                )
-            ),
-            unsafe_allow_html=True
-        )
+    mostrar_tarjetas([
+        ("t", "FECHA DE INGRESO", fecha_visible(unidad.get("Ziga_Talleres.Fecha de ingreso"))),
+        ("t", "DÍAS", numero_entero(unidad.get("Ziga_Talleres.dias"))),
+    ])
 
 
 # =========================================================
 # SINIESTRO
 # =========================================================
 
-folio_siniestro = unidad.get(
-    "Siniestro"
-)
-
-
-if tiene_informacion(folio_siniestro):
+if tiene_informacion(unidad.get("Siniestro")):
 
     hay_folio_abierto = True
 
@@ -1551,79 +1291,16 @@ if tiene_informacion(folio_siniestro):
 
     titulo_seccion("🚨 Siniestro")
 
-    col1, col2, col3 = st.columns(3)
+    mostrar_tarjetas([
+        ("t", "CATEGORÍA", valor_visible(unidad.get("Siniestros2.CATEGORIA"))),
+        ("t", "ETAPA", valor_visible(unidad.get("Siniestros2.ETAPA"))),
+        ("t", "DÍAS", numero_entero(unidad.get("Siniestros2.dias"))),
+    ])
 
-    with col1:
-
-        st.markdown(
-            tarjeta(
-                "CATEGORÍA",
-                valor_visible(
-                    unidad.get(
-                        "Siniestros2.CATEGORIA"
-                    )
-                )
-            ),
-            unsafe_allow_html=True
-        )
-
-    with col2:
-
-        st.markdown(
-            tarjeta(
-                "ETAPA",
-                valor_visible(
-                    unidad.get(
-                        "Siniestros2.ETAPA"
-                    )
-                )
-            ),
-            unsafe_allow_html=True
-        )
-
-    with col3:
-
-        st.markdown(
-            tarjeta(
-                "DÍAS",
-                numero_entero(
-                    unidad.get(
-                        "Siniestros2.dias"
-                    )
-                )
-            ),
-            unsafe_allow_html=True
-        )
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-
-        st.markdown(
-            tarjeta(
-                "FECHA DE APERTURA",
-                fecha_visible(
-                    unidad.get(
-                        "Siniestros2.FECHA APERTURA"
-                    )
-                )
-            ),
-            unsafe_allow_html=True
-        )
-
-    with col2:
-
-        st.markdown(
-            tarjeta(
-                "FECHA DEL SINIESTRO",
-                fecha_visible(
-                    unidad.get(
-                        "Siniestros2.FECHA SINIESTRO"
-                    )
-                )
-            ),
-            unsafe_allow_html=True
-        )
+    mostrar_tarjetas([
+        ("t", "FECHA DE APERTURA", fecha_visible(unidad.get("Siniestros2.FECHA APERTURA"))),
+        ("t", "FECHA DEL SINIESTRO", fecha_visible(unidad.get("Siniestros2.FECHA SINIESTRO"))),
+    ])
 
 
 # =========================================================
@@ -1640,17 +1317,9 @@ if not df_refacciones.empty:
         for c in df_refacciones.columns
     }
 
-    col_serie_ref = columnas_ref.get(
-        "serie"
-    )
-
-    col_folio_ref = columnas_ref.get(
-        "folio ws"
-    )
-
-    col_actividad_ref = columnas_ref.get(
-        "actividad"
-    )
+    col_serie_ref = columnas_ref.get("serie")
+    col_folio_ref = columnas_ref.get("folio ws")
+    col_actividad_ref = columnas_ref.get("actividad")
 
     if (
         col_serie_ref is not None
@@ -1668,13 +1337,10 @@ if not df_refacciones.empty:
             .str.upper()
         )
 
-        serie_actual = normalizar_texto(
-            serie
-        )
+        serie_actual = normalizar_texto(serie)
 
         ref = ref[
-            ref["_SERIE_BUSQUEDA"]
-            == serie_actual
+            ref["_SERIE_BUSQUEDA"] == serie_actual
         ].copy()
 
         for folio, grupo in ref.groupby(
@@ -1688,38 +1354,25 @@ if not df_refacciones.empty:
 
             actividades = []
 
-            for actividad in grupo[
-                col_actividad_ref
-            ]:
+            for actividad in grupo[col_actividad_ref]:
 
-                if not tiene_informacion(
-                    actividad
-                ):
+                if not tiene_informacion(actividad):
 
                     continue
 
-                texto = str(
-                    actividad
-                ).strip()
+                texto = str(actividad).strip()
 
                 if not any(
-                    texto.casefold()
-                    ==
-                    existente.casefold()
+                    texto.casefold() == existente.casefold()
                     for existente in actividades
                 ):
 
-                    actividades.append(
-                        texto
-                    )
+                    actividades.append(texto)
 
             if actividades:
 
                 grupos_refacciones.append(
-                    (
-                        str(folio).strip(),
-                        actividades
-                    )
+                    (str(folio).strip(), actividades)
                 )
 
 
