@@ -1,8 +1,13 @@
 import re
 import unicodedata
+import io
+import hashlib
+
 import streamlit as st
 import pandas as pd
 from pathlib import Path
+from PIL import Image
+import pytesseract
 
 
 # =========================================================
@@ -508,6 +513,15 @@ div[data-baseweb="popover"] li:hover {{
     color: {AZUL_MARINO};
 }}
 
+/* CÁMARA */
+div[data-testid="stCameraInput"] {{
+    margin-top: 0;
+}}
+
+div[data-testid="stCameraInput"] button {{
+    border-radius: 12px !important;
+}}
+
 /* CELULAR */
 @media (max-width: 768px) {{
     .topbar-titulo {{ font-size: 18px; }}
@@ -552,7 +566,10 @@ def mostrar_login():
 
     with col2:
 
-        usuario = st.text_input("Usuario", placeholder="Usuario")
+        usuario = st.text_input(
+            "Usuario",
+            placeholder="Usuario"
+        )
 
         password = st.text_input(
             "Contraseña",
@@ -656,11 +673,9 @@ def fecha_visible(valor):
         return valor_visible(valor)
 
 
-# ---------------------------------------------------------
-# NORMALIZACIÓN ÚNICA PARA PLACA / SERIE
-# Quita TODOS los espacios (incluidos \xa0, tabs, saltos de línea),
-# guiones, pasa a mayúsculas y elimina el ".0" de números leídos como float.
-# ---------------------------------------------------------
+# =========================================================
+# NORMALIZACIÓN
+# =========================================================
 
 def limpiar_valor(valor):
 
@@ -706,11 +721,11 @@ def normalizar_columnas(df):
 
 
 def buscar_columna(df, nombre):
-    """Encuentra una columna sin importar mayúsculas ni espacios."""
 
     objetivo = nombre.strip().upper()
 
     for c in df.columns:
+
         if str(c).strip().upper() == objetivo:
             return c
 
@@ -718,18 +733,30 @@ def buscar_columna(df, nombre):
 
 
 def clave_columna(nombre):
-    """Convierte un nombre de columna a una clave comparable:
-    sin acentos, sin mayúsculas, sin espacios ni signos."""
-    texto = unicodedata.normalize("NFKD", str(nombre))
-    texto = "".join(c for c in texto if not unicodedata.combining(c))
-    return re.sub(r"[^a-z0-9]", "", texto.lower())
+
+    texto = unicodedata.normalize(
+        "NFKD",
+        str(nombre)
+    )
+
+    texto = "".join(
+        c for c in texto
+        if not unicodedata.combining(c)
+    )
+
+    return re.sub(
+        r"[^a-z0-9]",
+        "",
+        texto.lower()
+    )
 
 
 def obtener(fila, nombre):
-    """Lee un campo de la fila ignorando acentos, mayúsculas y espacios."""
+
     objetivo = clave_columna(nombre)
 
     for c in fila.index:
+
         if clave_columna(c) == objetivo:
             return fila[c]
 
@@ -737,10 +764,86 @@ def obtener(fila, nombre):
 
 
 def texto_ejecutivo(valor):
-    """Nombre del ejecutivo, o 'Sin ejecutivo asignado' si está en blanco."""
+
     if not tiene_informacion(valor):
         return "Sin ejecutivo asignado"
+
     return str(valor).strip()
+
+
+# =========================================================
+# OCR - LEER PLACA / SERIE DESDE FOTO
+# =========================================================
+
+def leer_texto_foto(imagen_bytes):
+
+    try:
+
+        # Abrir imagen
+        img = Image.open(
+            io.BytesIO(imagen_bytes)
+        )
+
+        # Convertir a RGB
+        img = img.convert("RGB")
+
+        # OCR
+        texto = pytesseract.image_to_string(
+            img,
+            config="--psm 6"
+        )
+
+        # Limpiar resultado
+        lineas = []
+
+        for linea in texto.splitlines():
+
+            linea = linea.strip()
+
+            if not linea:
+                continue
+
+            # Elimina caracteres extraños
+            linea = re.sub(
+                r"[^A-Za-z0-9\- ]",
+                "",
+                linea
+            )
+
+            linea = linea.strip()
+
+            if linea:
+                lineas.append(linea)
+
+        if not lineas:
+            return ""
+
+        candidatos = []
+
+        for linea in lineas:
+
+            limpio = limpiar_valor(linea)
+
+            if not limpio:
+                continue
+
+            candidatos.append(limpio)
+
+        if not candidatos:
+            return ""
+
+        # Preferir textos de al menos 5 caracteres
+        candidatos.sort(
+            key=lambda x: (
+                0 if len(x) >= 5 else 1,
+                -len(x)
+            )
+        )
+
+        return candidatos[0]
+
+    except Exception:
+        return ""
 
 
 # =========================================================
@@ -757,11 +860,20 @@ def cargar_concentrado():
 
     df = normalizar_columnas(df)
 
-    # Evita que series/placas numéricas se pierdan o cambien de formato
     for nombre in ["SERIE", "PLACA"]:
-        col = buscar_columna(df, nombre)
+
+        col = buscar_columna(
+            df,
+            nombre
+        )
+
         if col is not None and col != nombre:
-            df = df.rename(columns={col: nombre})
+
+            df = df.rename(
+                columns={
+                    col: nombre
+                }
+            )
 
     return df
 
@@ -770,13 +882,16 @@ def cargar_concentrado():
 def cargar_refacciones():
 
     try:
+
         df = pd.read_excel(
             ARCHIVO_BASE,
             sheet_name=HOJA_REFACCIONES
         )
+
         return normalizar_columnas(df)
 
     except Exception:
+
         return pd.DataFrame()
 
 
@@ -806,48 +921,91 @@ def tarjeta_badge(campo, valor):
 
     texto = valor.lower()
 
-    if any(p in texto for p in [
-        "finaliz", "complet", "cerrad", "entreg",
-        "listo", "vigente", "activ"
-    ]):
+    if any(
+        p in texto
+        for p in [
+            "finaliz",
+            "complet",
+            "cerrad",
+            "entreg",
+            "listo",
+            "vigente",
+            "activ"
+        ]
+    ):
+
         clase = "badge-verde"
 
-    elif any(p in texto for p in [
-        "cancel", "venc", "rechaz", "detenid"
-    ]):
+    elif any(
+        p in texto
+        for p in [
+            "cancel",
+            "venc",
+            "rechaz",
+            "detenid"
+        ]
+    ):
+
         clase = "badge-rojo"
 
-    elif any(p in texto for p in [
-        "pend", "proceso", "espera", "revis",
-        "abiert", "tramite", "trámite"
-    ]):
+    elif any(
+        p in texto
+        for p in [
+            "pend",
+            "proceso",
+            "espera",
+            "revis",
+            "abiert",
+            "tramite",
+            "trámite"
+        ]
+    ):
+
         clase = "badge-amarillo"
 
     else:
+
         clase = "badge-azul"
 
     return f"""
 <div class="tarjeta">
 <div class="campo">{campo}</div>
-<div class="valor"><span class="badge {clase}">{valor}</span></div>
+<div class="valor">
+<span class="badge {clase}">{valor}</span>
+</div>
 </div>
 """
 
 
 def mostrar_tarjetas(items):
 
-    columnas = st.columns(len(items))
+    columnas = st.columns(
+        len(items)
+    )
 
-    for col, (tipo, campo, valor) in zip(columnas, items):
+    for col, (
+        tipo,
+        campo,
+        valor
+    ) in zip(columnas, items):
 
         with col:
 
             if tipo == "b":
-                html = tarjeta_badge(campo, valor)
+                html = tarjeta_badge(
+                    campo,
+                    valor
+                )
             else:
-                html = tarjeta(campo, valor)
+                html = tarjeta(
+                    campo,
+                    valor
+                )
 
-            st.markdown(html, unsafe_allow_html=True)
+            st.markdown(
+                html,
+                unsafe_allow_html=True
+            )
 
 
 def dias_numero_o_none(valor):
@@ -857,6 +1015,7 @@ def dias_numero_o_none(valor):
 
     try:
         return int(float(valor))
+
     except Exception:
         return None
 
@@ -880,27 +1039,46 @@ def titulo_seccion(texto, dias=None):
     nivel = nivel_dias(dias)
 
     if nivel is None:
-        html = f'<div class="titulo-seccion">{texto}</div>'
-    else:
+
         html = (
-            f'<div class="seccion-head">'
-            f'<div class="titulo-seccion">{texto}</div>'
-            f'<div class="dias-pill dias-{nivel}">⏱ {dias:,} días</div>'
+            f'<div class="titulo-seccion">'
+            f'{texto}'
             f'</div>'
         )
 
-    st.markdown(html, unsafe_allow_html=True)
+    else:
+
+        html = (
+            f'<div class="seccion-head">'
+            f'<div class="titulo-seccion">{texto}</div>'
+            f'<div class="dias-pill dias-{nivel}">'
+            f'⏱ {dias:,} días'
+            f'</div>'
+            f'</div>'
+        )
+
+    st.markdown(
+        html,
+        unsafe_allow_html=True
+    )
 
 
 def separador():
-    st.markdown('<div class="separador"></div>', unsafe_allow_html=True)
+
+    st.markdown(
+        '<div class="separador"></div>',
+        unsafe_allow_html=True
+    )
 
 
 # =========================================================
 # ENCABEZADO
 # =========================================================
 
-col1, col2 = st.columns([5, 1], vertical_alignment="center")
+col1, col2 = st.columns(
+    [5, 1],
+    vertical_alignment="center"
+)
 
 with col1:
 
@@ -909,21 +1087,34 @@ with col1:
 <div class="topbar">
 <div class="topbar-icono">🚗</div>
 <div>
-<div class="topbar-titulo">CASANOVA | CONTROL DE UNIDADES</div>
-<div class="topbar-sub">Consulta individual de unidades</div>
+<div class="topbar-titulo">
+CASANOVA | CONTROL DE UNIDADES
+</div>
+<div class="topbar-sub">
+Consulta individual de unidades
+</div>
 </div>
 </div>
 """,
         unsafe_allow_html=True
     )
 
+
 with col2:
 
-    if st.button("Cerrar sesión", use_container_width=True):
+    if st.button(
+        "Cerrar sesión",
+        use_container_width=True
+    ):
+
         st.session_state["autenticado"] = False
         st.rerun()
 
-    if st.button("🔄 Actualizar datos", use_container_width=True):
+    if st.button(
+        "🔄 Actualizar datos",
+        use_container_width=True
+    ):
+
         st.cache_data.clear()
         st.rerun()
 
@@ -933,33 +1124,60 @@ with col2:
 # =========================================================
 
 try:
+
     df = cargar_concentrado()
+
 except Exception as e:
-    st.error("No se pudo cargar concentrado.xlsx")
+
+    st.error(
+        "No se pudo cargar concentrado.xlsx"
+    )
+
     st.code(str(e))
+
     st.stop()
+
 
 df_refacciones = cargar_refacciones()
 
-if "SERIE" not in df.columns or "PLACA" not in df.columns:
+
+if (
+    "SERIE" not in df.columns
+    or "PLACA" not in df.columns
+):
+
     st.error(
-        "No se encontraron las columnas SERIE y/o PLACA en la hoja "
-        f"'{HOJA_BASE}'. Columnas detectadas:"
+        "No se encontraron las columnas SERIE y/o PLACA "
+        f"en la hoja '{HOJA_BASE}'. "
+        "Columnas detectadas:"
     )
-    st.code(", ".join(df.columns.astype(str)))
+
+    st.code(
+        ", ".join(
+            df.columns.astype(str)
+        )
+    )
+
     st.stop()
 
 
 # =========================================================
-# CLAVES LIMPIAS (se calculan una sola vez)
+# CLAVES LIMPIAS
 # =========================================================
 
 df = df.copy()
-df["_PLACA_KEY"] = limpiar_serie(df["PLACA"])
-df["_SERIE_KEY"] = limpiar_serie(df["SERIE"])
 
-# Identificador de la unidad: la SERIE; si no tiene, usa la PLACA
-df["_UNIDAD_KEY"] = df["_SERIE_KEY"].where(
+df["_PLACA_KEY"] = limpiar_serie(
+    df["PLACA"]
+)
+
+df["_SERIE_KEY"] = limpiar_serie(
+    df["SERIE"]
+)
+
+df["_UNIDAD_KEY"] = df[
+    "_SERIE_KEY"
+].where(
     df["_SERIE_KEY"] != "",
     df["_PLACA_KEY"]
 )
@@ -969,7 +1187,10 @@ df["_UNIDAD_KEY"] = df["_SERIE_KEY"].where(
 # TOTAL DE UNIDADES
 # =========================================================
 
-claves_validas = df.loc[df["_UNIDAD_KEY"] != "", "_UNIDAD_KEY"]
+claves_validas = df.loc[
+    df["_UNIDAD_KEY"] != "",
+    "_UNIDAD_KEY"
+]
 
 total_unidades = claves_validas.nunique()
 
@@ -977,59 +1198,229 @@ total_unidades = claves_validas.nunique()
 def mostrar_diagnostico():
 
     filas_totales = len(df)
-    sin_serie = int((df["_SERIE_KEY"] == "").sum())
-    sin_placa = int((df["_PLACA_KEY"] == "").sum())
+
+    sin_serie = int(
+        (df["_SERIE_KEY"] == "").sum()
+    )
+
+    sin_placa = int(
+        (df["_PLACA_KEY"] == "").sum()
+    )
+
     sin_ambas = int(
-        ((df["_SERIE_KEY"] == "") & (df["_PLACA_KEY"] == "")).sum()
+        (
+            (df["_SERIE_KEY"] == "")
+            &
+            (df["_PLACA_KEY"] == "")
+        ).sum()
     )
+
     series_repetidas = int(
-        df.loc[df["_SERIE_KEY"] != "", "_SERIE_KEY"].duplicated().sum()
+        df.loc[
+            df["_SERIE_KEY"] != "",
+            "_SERIE_KEY"
+        ].duplicated().sum()
     )
 
-    with st.expander("🧪 Diagnóstico de datos"):
+    with st.expander(
+        "🧪 Diagnóstico de datos"
+    ):
 
-        st.write(f"Filas en el Excel: **{filas_totales:,}**")
-        st.write(f"Unidades únicas contadas: **{total_unidades:,}**")
-        st.write(f"Filas sin SERIE: **{sin_serie:,}**")
-        st.write(f"Filas sin PLACA: **{sin_placa:,}**")
-        st.write(f"Filas sin SERIE ni PLACA (no se cuentan): **{sin_ambas:,}**")
-        st.write(f"Filas con SERIE repetida: **{series_repetidas:,}**")
+        st.write(
+            f"Filas en el Excel: **{filas_totales:,}**"
+        )
+
+        st.write(
+            f"Unidades únicas contadas: **{total_unidades:,}**"
+        )
+
+        st.write(
+            f"Filas sin SERIE: **{sin_serie:,}**"
+        )
+
+        st.write(
+            f"Filas sin PLACA: **{sin_placa:,}**"
+        )
+
+        st.write(
+            "Filas sin SERIE ni PLACA "
+            f"(no se cuentan): **{sin_ambas:,}**"
+        )
+
+        st.write(
+            f"Filas con SERIE repetida: **{series_repetidas:,}**"
+        )
 
         if series_repetidas:
+
             repetidas = df[
-                (df["_SERIE_KEY"] != "")
-                & df["_SERIE_KEY"].duplicated(keep=False)
-            ][["PLACA", "SERIE"]].sort_values("SERIE")
-            st.dataframe(repetidas, use_container_width=True)
+                (
+                    df["_SERIE_KEY"] != ""
+                )
+                &
+                df["_SERIE_KEY"].duplicated(
+                    keep=False
+                )
+            ][
+                ["PLACA", "SERIE"]
+            ].sort_values(
+                "SERIE"
+            )
+
+            st.dataframe(
+                repetidas,
+                use_container_width=True
+            )
 
 
 # =========================================================
 # BUSCADOR
 # =========================================================
 
-titulo_seccion("🔎 Buscar unidad")
-
-busqueda = st.text_input(
-    "Busca por PLACA o SERIE",
-    placeholder="Ejemplo: PDN1295 o número de serie...",
-    label_visibility="collapsed"
+titulo_seccion(
+    "🔎 Buscar unidad"
 )
 
+
+# ---------------------------------------------------------
+# SESSION STATE DEL OCR
+# ---------------------------------------------------------
+
+if "busqueda_ocr" not in st.session_state:
+
+    st.session_state[
+        "busqueda_ocr"
+    ] = ""
+
+
+if "foto_procesada" not in st.session_state:
+
+    st.session_state[
+        "foto_procesada"
+    ] = ""
+
+
+# ---------------------------------------------------------
+# CÁMARA
+# ---------------------------------------------------------
+
+col_busqueda, col_camara = st.columns(
+    [5, 1]
+)
+
+
+with col_camara:
+
+    foto = st.camera_input(
+        "📷 Escanear",
+        label_visibility="visible"
+    )
+
+
+# ---------------------------------------------------------
+# PROCESAR FOTO
+# ---------------------------------------------------------
+
+if foto is not None:
+
+    hash_foto = hashlib.md5(
+        foto.getvalue()
+    ).hexdigest()
+
+    if (
+        st.session_state.get(
+            "foto_procesada"
+        )
+        != hash_foto
+    ):
+
+        with st.spinner(
+            "🔎 Leyendo placa / serie..."
+        ):
+
+            texto_ocr = leer_texto_foto(
+                foto.getvalue()
+            )
+
+        st.session_state[
+            "foto_procesada"
+        ] = hash_foto
+
+        if texto_ocr:
+
+            st.session_state[
+                "busqueda_ocr"
+            ] = texto_ocr
+
+            st.success(
+                f"📷 Texto detectado: **{texto_ocr}**"
+            )
+
+            st.rerun()
+
+        else:
+
+            st.warning(
+                "No pude leer la placa o serie. "
+                "Intenta tomar una foto más cercana "
+                "y con buena iluminación."
+            )
+
+
+# ---------------------------------------------------------
+# CAMPO DE BÚSQUEDA
+# ---------------------------------------------------------
+
+with col_busqueda:
+
+    busqueda = st.text_input(
+        "Busca por PLACA o SERIE",
+        placeholder=(
+            "Ejemplo: PDN1295 "
+            "o número de serie..."
+        ),
+        value=st.session_state.get(
+            "busqueda_ocr",
+            ""
+        ),
+        label_visibility="collapsed"
+    )
+
+
+# Mantener actualizado el valor escrito
+# manualmente
+st.session_state[
+    "busqueda_ocr"
+] = busqueda
+
+
+# =========================================================
+# SI NO HAY BÚSQUEDA
+# =========================================================
 
 if not busqueda:
 
     st.markdown(
         f"""
 <div class="kpi-azul" style="margin-top:14px;">
-<div class="kpi-label">🚗 Total de unidades</div>
-<div class="kpi-numero">{total_unidades:,}</div>
-<div class="kpi-subtotal">Centenario / Lala</div>
+<div class="kpi-label">
+🚗 Total de unidades
+</div>
+<div class="kpi-numero">
+{total_unidades:,}
+</div>
+<div class="kpi-subtotal">
+Centenario / Lala
+</div>
 </div>
 """,
         unsafe_allow_html=True
     )
 
-    st.info("Escribe una placa o número de serie para consultar la unidad.")
+    st.info(
+        "Escribe una placa o número de serie "
+        "para consultar la unidad."
+    )
 
     mostrar_diagnostico()
 
@@ -1037,61 +1428,108 @@ if not busqueda:
 
 
 # =========================================================
-# BUSCAR (exacto primero, luego parcial)
+# BUSCAR
 # =========================================================
 
-criterio = normalizar_texto(busqueda)
+criterio = normalizar_texto(
+    busqueda
+)
 
 if criterio == "":
-    st.warning("Escribe una placa o serie válida.")
+
+    st.warning(
+        "Escribe una placa o serie válida."
+    )
+
     st.stop()
 
+
+# ---------------------------------------------------------
+# BÚSQUEDA EXACTA
+# ---------------------------------------------------------
+
 exacto = df[
-    (df["_PLACA_KEY"] == criterio)
-    | (df["_SERIE_KEY"] == criterio)
+    (
+        df["_PLACA_KEY"] == criterio
+    )
+    |
+    (
+        df["_SERIE_KEY"] == criterio
+    )
 ]
 
+
 if not exacto.empty:
+
     resultado = exacto.copy()
+
 else:
+
     resultado = df[
-        df["_PLACA_KEY"].str.contains(criterio, regex=False, na=False)
-        | df["_SERIE_KEY"].str.contains(criterio, regex=False, na=False)
+        df["_PLACA_KEY"].str.contains(
+            criterio,
+            regex=False,
+            na=False
+        )
+        |
+        df["_SERIE_KEY"].str.contains(
+            criterio,
+            regex=False,
+            na=False
+        )
     ].copy()
 
 
 if resultado.empty:
-    st.warning(f"No se encontró ninguna unidad con: {busqueda}")
+
+    st.warning(
+        f"No se encontró ninguna unidad con: "
+        f"{busqueda}"
+    )
+
     st.stop()
 
 
 # =========================================================
 # SELECCIONAR UNIDAD
-# (se usa la posición, así funciona aunque haya filas repetidas)
 # =========================================================
 
-resultado = resultado.reset_index(drop=True)
+resultado = resultado.reset_index(
+    drop=True
+)
+
 
 if len(resultado) > 1:
 
-    st.caption(f"Se encontraron {len(resultado):,} coincidencias.")
+    st.caption(
+        f"Se encontraron "
+        f"{len(resultado):,} coincidencias."
+    )
 
     def etiqueta(i):
+
         fila = resultado.iloc[i]
+
         return (
-            f"{valor_visible(fila.get('PLACA'))} | "
+            f"{valor_visible(fila.get('PLACA'))}"
+            f" | "
             f"{valor_visible(fila.get('SERIE'))}"
         )
 
     posicion = st.selectbox(
         "Selecciona la unidad",
-        options=list(range(len(resultado))),
+        options=list(
+            range(len(resultado))
+        ),
         format_func=etiqueta
     )
 
-    unidad = resultado.iloc[posicion]
+    unidad = resultado.iloc[
+        posicion
+    ]
 
 else:
+
     unidad = resultado.iloc[0]
 
 
@@ -1099,25 +1537,45 @@ else:
 # DATOS PRINCIPALES
 # =========================================================
 
-placa = valor_visible(unidad.get("PLACA"))
-serie = valor_visible(unidad.get("SERIE"))
+placa = valor_visible(
+    unidad.get("PLACA")
+)
+
+serie = valor_visible(
+    unidad.get("SERIE")
+)
 
 
 # =========================================================
 # DÍAS EN PISO
 # =========================================================
 
-dias_piso = unidad.get("DÍAS EN PISO")
+dias_piso = unidad.get(
+    "DÍAS EN PISO"
+)
 
-if tiene_informacion(dias_piso):
+
+if tiene_informacion(
+    dias_piso
+):
 
     try:
-        texto_dias = f"{int(float(dias_piso)):,} días"
+
+        texto_dias = (
+            f"{int(float(dias_piso)):,} días"
+        )
+
     except Exception:
-        texto_dias = valor_visible(dias_piso)
+
+        texto_dias = valor_visible(
+            dias_piso
+        )
 
 else:
-    texto_dias = "🆕 Recién ingresado"
+
+    texto_dias = (
+        "🆕 Recién ingresado"
+    )
 
 
 # =========================================================
@@ -1126,22 +1584,34 @@ else:
 
 col1, col2 = st.columns(2)
 
+
 with col1:
 
     st.markdown(
         f"""
 <div class="kpi-azul" style="margin-top:14px;">
-<div class="kpi-label">🚗 Total de unidades</div>
-<div class="kpi-numero">{total_unidades:,}</div>
-<div class="kpi-subtotal">Centenario / Lala</div>
+<div class="kpi-label">
+🚗 Total de unidades
+</div>
+<div class="kpi-numero">
+{total_unidades:,}
+</div>
+<div class="kpi-subtotal">
+Centenario / Lala
+</div>
 </div>
 """,
         unsafe_allow_html=True
     )
 
+
 with col2:
 
-    nivel_piso = nivel_dias(dias_numero_o_none(dias_piso))
+    nivel_piso = nivel_dias(
+        dias_numero_o_none(
+            dias_piso
+        )
+    )
 
     clase_kpi = {
         "verde": "kpi-verde",
@@ -1158,15 +1628,22 @@ with col2:
     }[nivel_piso]
 
     sub_html = (
-        f'<div class="kpi-sub">{texto_nivel}</div>'
-        if texto_nivel else ""
+        f'<div class="kpi-sub">'
+        f'{texto_nivel}'
+        f'</div>'
+        if texto_nivel
+        else ""
     )
 
     st.markdown(
         f"""
 <div class="{clase_kpi}" style="margin-top:14px;">
-<div class="kpi-label">🏭 Días en piso</div>
-<div class="kpi-numero">{texto_dias}</div>
+<div class="kpi-label">
+🏭 Días en piso
+</div>
+<div class="kpi-numero">
+{texto_dias}
+</div>
 {sub_html}
 </div>
 """,
@@ -1178,30 +1655,59 @@ with col2:
 # IDENTIDAD DE LA UNIDAD
 # =========================================================
 
-ejecutivo_ziga = obtener(unidad, "Ziga_Talleres.Ejecutivo responsable")
+ejecutivo_ziga = obtener(
+    unidad,
+    "Ziga_Talleres.Ejecutivo responsable"
+)
 
-if tiene_informacion(ejecutivo_ziga):
+
+if tiene_informacion(
+    ejecutivo_ziga
+):
+
     estilo_ejecutivo = ""
+
 else:
-    estilo_ejecutivo = ' style="color:#A7B1C2;font-style:italic;"'
+
+    estilo_ejecutivo = (
+        ' style="color:#A7B1C2;'
+        'font-style:italic;"'
+    )
+
 
 ejecutivo_html = (
     '<div>'
-    '<div class="unidad-serie-label">EJECUTIVO RESPONSABLE</div>'
-    f'<div class="unidad-serie"{estilo_ejecutivo}>'
-    f'{texto_ejecutivo(ejecutivo_ziga)}</div>'
+    '<div class="unidad-serie-label">'
+    'EJECUTIVO RESPONSABLE'
+    '</div>'
+    f'<div class="unidad-serie"'
+    f'{estilo_ejecutivo}>'
+    f'{texto_ejecutivo(ejecutivo_ziga)}'
+    '</div>'
     '</div>'
 )
+
 
 st.markdown(
     f"""
 <div class="unidad-header">
-<div class="unidad-placa">{placa}</div>
-<div>
-<div class="unidad-serie-label">NÚMERO DE SERIE</div>
-<div class="unidad-serie">{serie}</div>
+
+<div class="unidad-placa">
+{placa}
 </div>
+
+<div>
+<div class="unidad-serie-label">
+NÚMERO DE SERIE
+</div>
+
+<div class="unidad-serie">
+{serie}
+</div>
+</div>
+
 {ejecutivo_html}
+
 </div>
 """,
     unsafe_allow_html=True
@@ -1214,6 +1720,7 @@ st.markdown(
 
 grupos_refacciones = []
 
+
 if not df_refacciones.empty:
 
     columnas_ref = {
@@ -1221,9 +1728,18 @@ if not df_refacciones.empty:
         for c in df_refacciones.columns
     }
 
-    col_serie_ref = columnas_ref.get("serie")
-    col_folio_ref = columnas_ref.get("folio ws")
-    col_actividad_ref = columnas_ref.get("actividad")
+    col_serie_ref = columnas_ref.get(
+        "serie"
+    )
+
+    col_folio_ref = columnas_ref.get(
+        "folio ws"
+    )
+
+    col_actividad_ref = columnas_ref.get(
+        "actividad"
+    )
+
 
     if (
         col_serie_ref is not None
@@ -1233,38 +1749,77 @@ if not df_refacciones.empty:
 
         ref = df_refacciones.copy()
 
-        ref["_SERIE_BUSQUEDA"] = limpiar_serie(ref[col_serie_ref])
+        ref[
+            "_SERIE_BUSQUEDA"
+        ] = limpiar_serie(
+            ref[col_serie_ref]
+        )
 
-        # Usa la serie limpia de la unidad (no el texto "Sin información")
-        serie_actual = unidad.get("_SERIE_KEY", "")
+
+        # Usa la serie limpia
+        # de la unidad
+
+        serie_actual = unidad.get(
+            "_SERIE_KEY",
+            ""
+        )
+
 
         if serie_actual:
 
-            ref = ref[ref["_SERIE_BUSQUEDA"] == serie_actual].copy()
+            ref = ref[
+                ref["_SERIE_BUSQUEDA"]
+                == serie_actual
+            ].copy()
 
-            for folio, grupo in ref.groupby(col_folio_ref, sort=False):
 
-                if not tiene_informacion(folio):
+            for folio, grupo in ref.groupby(
+                col_folio_ref,
+                sort=False
+            ):
+
+                if not tiene_informacion(
+                    folio
+                ):
                     continue
+
 
                 actividades = []
 
-                for actividad in grupo[col_actividad_ref]:
 
-                    if not tiene_informacion(actividad):
+                for actividad in grupo[
+                    col_actividad_ref
+                ]:
+
+                    if not tiene_informacion(
+                        actividad
+                    ):
                         continue
 
-                    texto = str(actividad).strip()
+
+                    texto = str(
+                        actividad
+                    ).strip()
+
 
                     if not any(
-                        texto.casefold() == existente.casefold()
+                        texto.casefold()
+                        == existente.casefold()
                         for existente in actividades
                     ):
-                        actividades.append(texto)
+
+                        actividades.append(
+                            texto
+                        )
+
 
                 if actividades:
+
                     grupos_refacciones.append(
-                        (str(folio).strip(), actividades)
+                        (
+                            str(folio).strip(),
+                            actividades
+                        )
                     )
 
 
@@ -1273,25 +1828,85 @@ if not df_refacciones.empty:
 # =========================================================
 
 folios_resumen = [
-    ("📋 Gestoría", tiene_informacion(unidad.get("Gestorías1.Folio"))),
-    ("🔧 Mantenimiento", tiene_informacion(unidad.get("Mantenimiento.FOLIO"))),
-    ("🛠️ Ziga Talleres", tiene_informacion(unidad.get("Ziga_Talleres.Folio"))),
-    ("🚨 Siniestro", tiene_informacion(unidad.get("Siniestro"))),
-    ("📦 Refacciones", bool(grupos_refacciones)),
+
+    (
+        "📋 Gestoría",
+        tiene_informacion(
+            unidad.get(
+                "Gestorías1.Folio"
+            )
+        )
+    ),
+
+    (
+        "🔧 Mantenimiento",
+        tiene_informacion(
+            unidad.get(
+                "Mantenimiento.FOLIO"
+            )
+        )
+    ),
+
+    (
+        "🛠️ Ziga Talleres",
+        tiene_informacion(
+            unidad.get(
+                "Ziga_Talleres.Folio"
+            )
+        )
+    ),
+
+    (
+        "🚨 Siniestro",
+        tiene_informacion(
+            unidad.get(
+                "Siniestro"
+            )
+        )
+    ),
+
+    (
+        "📦 Refacciones",
+        bool(
+            grupos_refacciones
+        )
+    ),
+
 ]
 
-total_abiertos = sum(1 for _, activo in folios_resumen if activo)
 
-chips_html = "".join(
-    f'<span class="chip {"chip-on" if activo else "chip-off"}">'
-    f'<span class="chip-punto"></span>{nombre}</span>'
-    for nombre, activo in folios_resumen
+total_abiertos = sum(
+    1
+    for _, activo
+    in folios_resumen
+    if activo
 )
 
-titulo_seccion(f"🚦 Resumen de folios abiertos ({total_abiertos})")
+
+chips_html = "".join(
+
+    f'<span class="chip '
+    f'{"chip-on" if activo else "chip-off"}">'
+    f'<span class="chip-punto"></span>'
+    f'{nombre}'
+    f'</span>'
+
+    for nombre, activo
+    in folios_resumen
+
+)
+
+
+titulo_seccion(
+    f"🚦 Resumen de folios abiertos "
+    f"({total_abiertos})"
+)
+
 
 st.markdown(
-    f'<div class="resumen">{chips_html}</div>',
+    f'<div class="resumen">'
+    f'{chips_html}'
+    f'</div>',
     unsafe_allow_html=True
 )
 
@@ -1300,13 +1915,45 @@ st.markdown(
 # INFORMACIÓN GENERAL
 # =========================================================
 
-titulo_seccion("📋 Información general")
+titulo_seccion(
+    "📋 Información general"
+)
+
 
 mostrar_tarjetas([
-    ("t", "LÍNEA", valor_visible(unidad.get("LINEA"))),
-    ("t", "MODELO", modelo_visible(unidad.get("MODELO"))),
-    ("b", "ESTATUS", valor_visible(unidad.get("ESTATUS"))),
-    ("t", "SUBESTATUS", valor_visible(unidad.get("SUBESTATUS"))),
+
+    (
+        "t",
+        "LÍNEA",
+        valor_visible(
+            unidad.get("LINEA")
+        )
+    ),
+
+    (
+        "t",
+        "MODELO",
+        modelo_visible(
+            unidad.get("MODELO")
+        )
+    ),
+
+    (
+        "b",
+        "ESTATUS",
+        valor_visible(
+            unidad.get("ESTATUS")
+        )
+    ),
+
+    (
+        "t",
+        "SUBESTATUS",
+        valor_visible(
+            unidad.get("SUBESTATUS")
+        )
+    ),
+
 ])
 
 
@@ -1314,12 +1961,43 @@ mostrar_tarjetas([
 # DATOS DE LA UNIDAD
 # =========================================================
 
-titulo_seccion("🚘 Datos de la unidad")
+titulo_seccion(
+    "🚘 Datos de la unidad"
+)
+
 
 mostrar_tarjetas([
-    ("t", "NOMBRE DEL CLIENTE", valor_visible(unidad.get("NOMBRE DEL CLIENTE"))),
-    ("t", "ALMACÉN", valor_visible(unidad.get("ALMACÉN"))),
-    ("t", "UNIDAD DE NEGOCIO", valor_visible(unidad.get("UNIDAD NEGOCIO"))),
+
+    (
+        "t",
+        "NOMBRE DEL CLIENTE",
+        valor_visible(
+            unidad.get(
+                "NOMBRE DEL CLIENTE"
+            )
+        )
+    ),
+
+    (
+        "t",
+        "ALMACÉN",
+        valor_visible(
+            unidad.get(
+                "ALMACÉN"
+            )
+        )
+    ),
+
+    (
+        "t",
+        "UNIDAD DE NEGOCIO",
+        valor_visible(
+            unidad.get(
+                "UNIDAD NEGOCIO"
+            )
+        )
+    ),
+
 ])
 
 
@@ -1330,7 +2008,11 @@ hay_folio_abierto = False
 # GESTORÍA
 # =========================================================
 
-if tiene_informacion(unidad.get("Gestorías1.Folio")):
+if tiene_informacion(
+    unidad.get(
+        "Gestorías1.Folio"
+    )
+):
 
     hay_folio_abierto = True
 
@@ -1338,19 +2020,81 @@ if tiene_informacion(unidad.get("Gestorías1.Folio")):
 
     titulo_seccion(
         "📋 Gestoría",
-        dias_numero_o_none(unidad.get("Gestorías1.Personalizado"))
+        dias_numero_o_none(
+            unidad.get(
+                "Gestorías1.Personalizado"
+            )
+        )
     )
 
-    mostrar_tarjetas([
-        ("t", "FOLIO", valor_visible(unidad.get("Gestorías1.Folio"))),
-        ("b", "ESTATUS DE PÓLIZA", valor_visible(unidad.get("Estatus poliza"))),
-        ("t", "FECHA DE CREACIÓN", fecha_visible(unidad.get("Gestorías1.Fecha de creación"))),
-    ])
 
     mostrar_tarjetas([
-        ("b", "ESTADO DE ATENCIÓN", valor_visible(unidad.get("Gestorías1.Estado de atención"))),
-        ("t", "DÍAS", numero_entero(unidad.get("Gestorías1.Personalizado"))),
-        ("t", "CONCEPTOS", valor_visible(unidad.get("Gestorías1.Conceptos"))),
+
+        (
+            "t",
+            "FOLIO",
+            valor_visible(
+                unidad.get(
+                    "Gestorías1.Folio"
+                )
+            )
+        ),
+
+        (
+            "b",
+            "ESTATUS DE PÓLIZA",
+            valor_visible(
+                unidad.get(
+                    "Estatus poliza"
+                )
+            )
+        ),
+
+        (
+            "t",
+            "FECHA DE CREACIÓN",
+            fecha_visible(
+                unidad.get(
+                    "Gestorías1.Fecha de creación"
+                )
+            )
+        ),
+
+    ])
+
+
+    mostrar_tarjetas([
+
+        (
+            "b",
+            "ESTADO DE ATENCIÓN",
+            valor_visible(
+                unidad.get(
+                    "Gestorías1.Estado de atención"
+                )
+            )
+        ),
+
+        (
+            "t",
+            "DÍAS",
+            numero_entero(
+                unidad.get(
+                    "Gestorías1.Personalizado"
+                )
+            )
+        ),
+
+        (
+            "t",
+            "CONCEPTOS",
+            valor_visible(
+                unidad.get(
+                    "Gestorías1.Conceptos"
+                )
+            )
+        ),
+
     ])
 
 
@@ -1358,7 +2102,11 @@ if tiene_informacion(unidad.get("Gestorías1.Folio")):
 # MANTENIMIENTO
 # =========================================================
 
-if tiene_informacion(unidad.get("Mantenimiento.FOLIO")):
+if tiene_informacion(
+    unidad.get(
+        "Mantenimiento.FOLIO"
+    )
+):
 
     hay_folio_abierto = True
 
@@ -1366,18 +2114,71 @@ if tiene_informacion(unidad.get("Mantenimiento.FOLIO")):
 
     titulo_seccion(
         "🔧 Mantenimiento",
-        dias_numero_o_none(unidad.get("Mantenimiento.dias"))
+        dias_numero_o_none(
+            unidad.get(
+                "Mantenimiento.dias"
+            )
+        )
     )
 
-    mostrar_tarjetas([
-        ("t", "FOLIO", valor_visible(unidad.get("Mantenimiento.FOLIO"))),
-        ("t", "FECHA DE CREACIÓN", fecha_visible(unidad.get("Mantenimiento.FECHA DE CREACION DEL FOLIO"))),
-        ("b", "ESTATUS", valor_visible(unidad.get("Mantenimiento.ESTATUS DEL FOLIO"))),
-    ])
 
     mostrar_tarjetas([
-        ("t", "PROVEEDOR", valor_visible(unidad.get("Mantenimiento.PROVEEDOR"))),
-        ("t", "DÍAS", numero_entero(unidad.get("Mantenimiento.dias"))),
+
+        (
+            "t",
+            "FOLIO",
+            valor_visible(
+                unidad.get(
+                    "Mantenimiento.FOLIO"
+                )
+            )
+        ),
+
+        (
+            "t",
+            "FECHA DE CREACIÓN",
+            fecha_visible(
+                unidad.get(
+                    "Mantenimiento.FECHA DE CREACION DEL FOLIO"
+                )
+            )
+        ),
+
+        (
+            "b",
+            "ESTATUS",
+            valor_visible(
+                unidad.get(
+                    "Mantenimiento.ESTATUS DEL FOLIO"
+                )
+            )
+        ),
+
+    ])
+
+
+    mostrar_tarjetas([
+
+        (
+            "t",
+            "PROVEEDOR",
+            valor_visible(
+                unidad.get(
+                    "Mantenimiento.PROVEEDOR"
+                )
+            )
+        ),
+
+        (
+            "t",
+            "DÍAS",
+            numero_entero(
+                unidad.get(
+                    "Mantenimiento.dias"
+                )
+            )
+        ),
+
     ])
 
 
@@ -1385,7 +2186,11 @@ if tiene_informacion(unidad.get("Mantenimiento.FOLIO")):
 # ZIGA TALLERES
 # =========================================================
 
-if tiene_informacion(unidad.get("Ziga_Talleres.Folio")):
+if tiene_informacion(
+    unidad.get(
+        "Ziga_Talleres.Folio"
+    )
+):
 
     hay_folio_abierto = True
 
@@ -1393,29 +2198,106 @@ if tiene_informacion(unidad.get("Ziga_Talleres.Folio")):
 
     titulo_seccion(
         "🛠️ Ziga Talleres",
-        dias_numero_o_none(unidad.get("Ziga_Talleres.dias"))
+        dias_numero_o_none(
+            unidad.get(
+                "Ziga_Talleres.dias"
+            )
+        )
     )
 
-    mostrar_tarjetas([
-        ("t", "FOLIO", valor_visible(unidad.get("Ziga_Talleres.Folio"))),
-        ("b", "ESTATUS", valor_visible(unidad.get("Ziga_Talleres.Estatus"))),
-        ("t", "ÁREA DEL TALLER ACTIVA", valor_visible(unidad.get("Ziga_Talleres.Área del taller activa"))),
-    ])
 
     mostrar_tarjetas([
-        ("t", "FECHA DE INGRESO", fecha_visible(unidad.get("Ziga_Talleres.Fecha de ingreso"))),
-        ("t", "DÍAS", numero_entero(unidad.get("Ziga_Talleres.dias"))),
-        ("t", "EJECUTIVO RESPONSABLE", texto_ejecutivo(obtener(unidad, "Ziga_Talleres.Ejecutivo responsable"))),
+
+        (
+            "t",
+            "FOLIO",
+            valor_visible(
+                unidad.get(
+                    "Ziga_Talleres.Folio"
+                )
+            )
+        ),
+
+        (
+            "b",
+            "ESTATUS",
+            valor_visible(
+                unidad.get(
+                    "Ziga_Talleres.Estatus"
+                )
+            )
+        ),
+
+        (
+            "t",
+            "ÁREA DEL TALLER ACTIVA",
+            valor_visible(
+                unidad.get(
+                    "Ziga_Talleres.Área del taller activa"
+                )
+            )
+        ),
+
     ])
+
+
+    mostrar_tarjetas([
+
+        (
+            "t",
+            "FECHA DE INGRESO",
+            fecha_visible(
+                unidad.get(
+                    "Ziga_Talleres.Fecha de ingreso"
+                )
+            )
+        ),
+
+        (
+            "t",
+            "DÍAS",
+            numero_entero(
+                unidad.get(
+                    "Ziga_Talleres.dias"
+                )
+            )
+        ),
+
+        (
+            "t",
+            "EJECUTIVO RESPONSABLE",
+            texto_ejecutivo(
+                obtener(
+                    unidad,
+                    "Ziga_Talleres.Ejecutivo responsable"
+                )
+            )
+        ),
+
+    ])
+
 
     if not any(
-        clave_columna(c) == clave_columna("Ziga_Talleres.Ejecutivo responsable")
+        clave_columna(c)
+        ==
+        clave_columna(
+            "Ziga_Talleres.Ejecutivo responsable"
+        )
         for c in unidad.index
     ):
+
         st.warning(
-            "No se encontró la columna 'Ziga_Talleres.Ejecutivo responsable' "
-            "en la hoja concentrado. Columnas de Ziga detectadas: "
-            + ", ".join(c for c in unidad.index if "ziga" in clave_columna(c))
+            "No se encontró la columna "
+            "'Ziga_Talleres.Ejecutivo responsable' "
+            "en la hoja concentrado. "
+            "Columnas de Ziga detectadas: "
+            +
+            ", ".join(
+                c
+                for c in unidad.index
+                if "ziga"
+                in clave_columna(c)
+            )
         )
 
 
@@ -1423,7 +2305,11 @@ if tiene_informacion(unidad.get("Ziga_Talleres.Folio")):
 # SINIESTRO
 # =========================================================
 
-if tiene_informacion(unidad.get("Siniestro")):
+if tiene_informacion(
+    unidad.get(
+        "Siniestro"
+    )
+):
 
     hay_folio_abierto = True
 
@@ -1431,18 +2317,71 @@ if tiene_informacion(unidad.get("Siniestro")):
 
     titulo_seccion(
         "🚨 Siniestro",
-        dias_numero_o_none(unidad.get("Siniestros2.dias"))
+        dias_numero_o_none(
+            unidad.get(
+                "Siniestros2.dias"
+            )
+        )
     )
 
-    mostrar_tarjetas([
-        ("t", "CATEGORÍA", valor_visible(unidad.get("Siniestros2.CATEGORIA"))),
-        ("t", "ETAPA", valor_visible(unidad.get("Siniestros2.ETAPA"))),
-        ("t", "DÍAS", numero_entero(unidad.get("Siniestros2.dias"))),
-    ])
 
     mostrar_tarjetas([
-        ("t", "FECHA DE APERTURA", fecha_visible(unidad.get("Siniestros2.FECHA APERTURA"))),
-        ("t", "FECHA DEL SINIESTRO", fecha_visible(unidad.get("Siniestros2.FECHA SINIESTRO"))),
+
+        (
+            "t",
+            "CATEGORÍA",
+            valor_visible(
+                unidad.get(
+                    "Siniestros2.CATEGORIA"
+                )
+            )
+        ),
+
+        (
+            "t",
+            "ETAPA",
+            valor_visible(
+                unidad.get(
+                    "Siniestros2.ETAPA"
+                )
+            )
+        ),
+
+        (
+            "t",
+            "DÍAS",
+            numero_entero(
+                unidad.get(
+                    "Siniestros2.dias"
+                )
+            )
+        ),
+
+    ])
+
+
+    mostrar_tarjetas([
+
+        (
+            "t",
+            "FECHA DE APERTURA",
+            fecha_visible(
+                unidad.get(
+                    "Siniestros2.FECHA APERTURA"
+                )
+            )
+        ),
+
+        (
+            "t",
+            "FECHA DEL SINIESTRO",
+            fecha_visible(
+                unidad.get(
+                    "Siniestros2.FECHA SINIESTRO"
+                )
+            )
+        ),
+
     ])
 
 
@@ -1456,19 +2395,31 @@ if grupos_refacciones:
 
     separador()
 
-    titulo_seccion("📦 Refacciones pendientes")
+    titulo_seccion(
+        "📦 Refacciones pendientes"
+    )
+
 
     for folio, actividades in grupos_refacciones:
 
         actividades_html = "<br>".join(
-            f"• {actividad}" for actividad in actividades
+            f"• {actividad}"
+            for actividad
+            in actividades
         )
+
 
         st.markdown(
             f"""
 <div class="refaccion-card">
-<div class="refaccion-folio">FOLIO WS: {folio}</div>
-<div class="refaccion-actividad">{actividades_html}</div>
+<div class="refaccion-folio">
+FOLIO WS: {folio}
+</div>
+
+<div class="refaccion-actividad">
+{actividades_html}
+</div>
+
 </div>
 """,
             unsafe_allow_html=True
@@ -1497,24 +2448,41 @@ if not hay_folio_abierto:
 
 separador()
 
-# Se omiten las columnas internas de búsqueda
+
 ficha_serie = unidad.drop(
-    labels=["_PLACA_KEY", "_SERIE_KEY", "_UNIDAD_KEY"],
+    labels=[
+        "_PLACA_KEY",
+        "_SERIE_KEY",
+        "_UNIDAD_KEY"
+    ],
     errors="ignore"
 ).dropna()
 
+
 ficha_df = pd.DataFrame({
-    "CAMPO": ficha_serie.index.astype(str),
-    "VALOR": ficha_serie.astype(str).values
+
+    "CAMPO":
+        ficha_serie.index.astype(str),
+
+    "VALOR":
+        ficha_serie.astype(str).values
+
 })
+
 
 st.download_button(
     "⬇️ Descargar ficha de la unidad (CSV)",
-    data=ficha_df.to_csv(index=False).encode("utf-8-sig"),
+    data=ficha_df.to_csv(
+        index=False
+    ).encode("utf-8-sig"),
     file_name=f"ficha_{placa}.csv",
     mime="text/csv"
 )
 
+
 mostrar_diagnostico()
 
-st.caption("Casanova | Control de Unidades")
+
+st.caption(
+    "Casanova | Control de Unidades"
+)
