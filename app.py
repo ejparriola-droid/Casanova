@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import re
 from pathlib import Path
 
 
@@ -892,6 +893,21 @@ def normalizar_texto(valor):
     )
 
 
+def normalizar_busqueda(valor):
+
+    if not tiene_informacion(valor):
+
+        return ""
+
+    # Permite encontrar placas aunque vengan con espacios, guiones,
+    # puntos u otros separadores. No depende de una placa específica.
+    return re.sub(
+        r"[^A-Z0-9]",
+        "",
+        str(valor).upper()
+    )
+
+
 # ---------------------------------------------------------
 # TARJETAS
 # ---------------------------------------------------------
@@ -1170,24 +1186,18 @@ if not busqueda:
 # PREPARAR BÚSQUEDA
 # =========================================================
 
-criterio = normalizar_texto(busqueda)
+criterio = normalizar_busqueda(busqueda)
 
 
 placas = (
     df["PLACA"]
-    .astype("string")
-    .fillna("")
-    .str.strip()
-    .str.upper()
+    .apply(normalizar_busqueda)
 )
 
 
 series = (
     df["SERIE"]
-    .astype("string")
-    .fillna("")
-    .str.strip()
-    .str.upper()
+    .apply(normalizar_busqueda)
 )
 
 
@@ -1696,3 +1706,4 @@ st.download_button(
 
 st.caption(
     "Casanova | Control de Unidades"
+)
