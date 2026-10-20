@@ -2,11 +2,13 @@ import re
 import unicodedata
 import io
 import hashlib
+from difflib import get_close_matches
 
 import streamlit as st
 import pandas as pd
+import numpy as np
 from pathlib import Path
-from PIL import Image
+from PIL import Image, ImageOps
 import pytesseract
 
 
@@ -37,7 +39,6 @@ DIAS_ROJO = 60
 
 # Tiempo (segundos) que se conserva el Excel en memoria
 CACHE_TTL = 300
-
 
 
 # =========================================================
@@ -1010,41 +1011,179 @@ def mostrar_diagnostico():
 
 
 # =========================================================
-# OCR - LEER PLACA / SERIE DESDE FOTO
+# OCR - DETECTA PLACA / SERIE EN CUALQUIER FOTO
 # =========================================================
 
-def leer_texto_foto(imagen_bytes):
+LETRAS_A_DIGITO = {"O": "0", "Q": "0", "D": "0", "I": "1", "L": "1",
+                   "Z": "2", "S": "5", "B": "8", "G": "6"}
+DIGITO_A_LETRA = {"0": "O", "1": "I", "2": "Z", "5": "S", "8": "B", "6": "G"}
+
+VIN_VALIDO = re.compile(r"^[A-HJ-NPR-Z0-9]{17}$")
+
+
+def preparar_imagen(img, angulo=0, invertir=False):
+
+    img = img.convert("L")
+
+    if angulo:
+        img = img.rotate(angulo, expand=True)
+
+    # Normalizar tamaño: ni muy chica ni gigante
+    lado = max(img.size)
+    factor = 2000 / lado
+    img = img.resize(
+        (int(img.width * factor), int(img.height * factor)),
+        Image.LANCZOS
+    )
+
+    img = ImageOps.autocontrast(img, cutoff=2)
+
+    if invertir:
+        img = ImageOps.invert(img)
+
+    return img
+
+
+def corregir_placa_cdmx(ventana):
+    """Formato CDMX: LETRA DIGITO DIGITO LETRA LETRA LETRA (D06BND, R20BSD)."""
+
+    if len(ventana) != 6:
+        return None
+
+    esquema = "LDDLLL"
+    resultado = ""
+
+    for ch, tipo in zip(ventana, esquema):
+
+        if tipo == "D":
+            ch = LETRAS_A_DIGITO.get(ch, ch)
+            if not ch.isdigit():
+                return None
+        else:
+            ch = DIGITO_A_LETRA.get(ch, ch)
+            if not ch.isalpha():
+                return None
+
+        resultado += ch
+
+    return resultado
+
+
+def extraer_candidatos(texto):
+    """Devuelve lista de (candidato, puntaje) encontrados en el texto."""
+
+    candidatos = []
+
+    # Asteriscos y guiones se tratan como separadores y luego se eliminan
+    texto = texto.upper().replace("*", " ").replace("-", " ")
+
+    for linea in texto.splitlines():
+
+        limpio = re.sub(r"[^A-Z0-9]", "", linea)
+
+        if len(limpio) < 6:
+            continue
+
+        # ---------- SERIE / VIN ----------
+        base_vin = limpio
+        extra = 0
+
+        if "VIN" in limpio:
+            base_vin = limpio.split("VIN", 1)[1]
+            extra = 10
+
+        for i in range(len(base_vin) - 16):
+
+            v = base_vin[i:i + 17]
+
+            # En un VIN no existen I, O, Q
+            v = v.replace("O", "0").replace("Q", "0").replace("I", "1")
+
+            if (
+                VIN_VALIDO.match(v)
+                and any(c.isdigit() for c in v)
+                and any(c.isalpha() for c in v)
+            ):
+                candidatos.append((v, 20 + extra))
+
+        # ---------- PLACA CDMX ----------
+        for i in range(len(limpio) - 5):
+            p = corregir_placa_cdmx(limpio[i:i + 6])
+            if p:
+                candidatos.append((p, 8))
+
+        # ---------- OTROS FORMATOS DE PLACA ----------
+        for patron in (
+            r"[A-Z]{3}\d{3,4}",   # PDN1295
+            r"\d{3}[A-Z]{3}",     # 123ABC
+            r"[A-Z]{2}\d{4,5}",   # AB1234
+        ):
+            for m in re.finditer(patron, limpio):
+                candidatos.append((m.group(0), 4))
+
+    return candidatos
+
+
+def leer_texto_foto(imagen_bytes, claves_conocidas=None):
 
     try:
 
         img = Image.open(io.BytesIO(imagen_bytes))
-        img = img.convert("RGB")
+        img = ImageOps.exif_transpose(img).convert("RGB")
 
-        texto = pytesseract.image_to_string(
-            img,
-            config="--psm 6"
+        conocidas = set(claves_conocidas or [])
+        puntajes = {}
+
+        # Sin guiones ni asteriscos
+        config_base = (
+            "-c tessedit_char_whitelist="
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 "
         )
 
-        candidatos = []
+        # Rotaciones: foto normal, de lado (VIN girado) y de cabeza
+        for angulo in (0, 90, 270, 180):
 
-        for linea in texto.splitlines():
+            for invertir in (False, True):
 
-            linea = re.sub(r"[^A-Za-z0-9\- ]", "", linea.strip()).strip()
+                trabajo = preparar_imagen(img, angulo, invertir)
 
-            limpio = limpiar_valor(linea)
+                # psm 11 = texto suelto en cualquier parte (ideal para placas)
+                # psm 6  = bloque de texto
+                for psm in (11, 6):
 
-            if limpio:
-                candidatos.append(limpio)
+                    texto = pytesseract.image_to_string(
+                        trabajo,
+                        config=f"--psm {psm} {config_base}"
+                    )
 
-        if not candidatos:
+                    for cand, pts in extraer_candidatos(texto):
+                        puntajes[cand] = puntajes.get(cand, 0) + pts
+
+            # Si ya hay un resultado muy seguro, no seguir probando
+            if puntajes and max(puntajes.values()) >= 40:
+                break
+
+        if not puntajes:
             return ""
 
-        # Preferir textos de al menos 5 caracteres, y los más largos
-        candidatos.sort(
-            key=lambda x: (0 if len(x) >= 5 else 1, -len(x))
-        )
+        # 1) Lo que exista en el Excel gana
+        en_base = [c for c in puntajes if c in conocidas]
+        if en_base:
+            return max(en_base, key=lambda c: puntajes[c])
 
-        return candidatos[0]
+        # 2) Coincidencia aproximada (si falla 1 carácter)
+        if conocidas:
+
+            lista = list(conocidas)
+
+            for cand in sorted(puntajes, key=puntajes.get, reverse=True):
+                corte = 0.93 if len(cand) == 17 else 0.83
+                cerca = get_close_matches(cand, lista, n=1, cutoff=corte)
+                if cerca:
+                    return cerca[0]
+
+        # 3) Mejor candidato por puntaje
+        return max(puntajes, key=puntajes.get)
 
     except Exception:
         return ""
@@ -1074,28 +1213,34 @@ if "msg_foto" not in st.session_state:
 
 
 # ---------------------------------------------------------
-# BUSCAR CON FOTO (solo cuando el usuario lo activa)
-# En el celular permite elegir de la galería o tomar la
-# foto con la cámara trasera.
+# MODO DE BÚSQUEDA: escribir, cámara o subir foto
 # ---------------------------------------------------------
+
+modo_foto = st.radio(
+    "Cómo quieres buscar",
+    ["⌨️ Escribir", "📷 Cámara", "🖼️ Subir foto"],
+    horizontal=True,
+    label_visibility="collapsed"
+)
 
 foto = None
 
-usar_foto = st.toggle(
-    "📷 Buscar con foto (galería o cámara trasera)",
-    value=False
-)
+if modo_foto == "📷 Cámara":
 
-if usar_foto:
-
-    foto = st.file_uploader(
-        "Selecciona una foto o toma una nueva",
-        type=["jpg", "jpeg", "png", "webp"]
+    foto = st.camera_input(
+        "Apunta a la placa o a la etiqueta del VIN y toma la foto"
     )
 
     st.caption(
-        "En el celular, al pulsar el botón elige "
-        "'Galería' o 'Tomar foto' (cámara trasera)."
+        "Acércate hasta que el texto se vea grande y nítido. "
+        "Evita reflejos y sombras."
+    )
+
+elif modo_foto == "🖼️ Subir foto":
+
+    foto = st.file_uploader(
+        "Selecciona una foto",
+        type=["jpg", "jpeg", "png", "webp"]
     )
 
 
@@ -1106,15 +1251,17 @@ if usar_foto:
 if foto is not None:
 
     datos_foto = foto.getvalue()
-
     hash_foto = hashlib.md5(datos_foto).hexdigest()
 
     if st.session_state["foto_procesada"] != hash_foto:
 
         st.session_state["foto_procesada"] = hash_foto
 
-        with st.spinner("🔎 Leyendo placa / serie..."):
-            texto_ocr = leer_texto_foto(datos_foto)
+        claves_conocidas = set(df["_PLACA_KEY"]) | set(df["_SERIE_KEY"])
+        claves_conocidas.discard("")
+
+        with st.spinner("🔎 Detectando placa / serie..."):
+            texto_ocr = leer_texto_foto(datos_foto, claves_conocidas)
 
         if texto_ocr:
 
@@ -1123,17 +1270,15 @@ if foto is not None:
 
             st.session_state["msg_foto"] = (
                 "ok",
-                f"📷 Texto detectado: {texto_ocr} "
-                "— revisa que sea correcto."
+                f"📷 Detectado: {texto_ocr} — revisa que sea correcto."
             )
 
         else:
 
             st.session_state["msg_foto"] = (
                 "warn",
-                "No pude leer la placa o serie. "
-                "Intenta con una foto más cercana "
-                "y con buena iluminación."
+                "No pude detectar una placa o serie. "
+                "Acércate más, con buena luz, y vuelve a tomar la foto."
             )
 
     tipo_msg, texto_msg = st.session_state["msg_foto"]
@@ -1146,13 +1291,20 @@ if foto is not None:
 
 # ---------------------------------------------------------
 # CAMPO DE BÚSQUEDA
+# Quita guiones, asteriscos, espacios y pasa a mayúsculas
 # ---------------------------------------------------------
+
+def limpiar_busqueda():
+    texto = st.session_state.get("busqueda", "")
+    st.session_state["busqueda"] = re.sub(r"[^A-Za-z0-9]", "", texto).upper()
+
 
 busqueda = st.text_input(
     "Busca por PLACA o SERIE",
     placeholder="Ejemplo: PDN1295 o número de serie...",
     label_visibility="collapsed",
-    key="busqueda"
+    key="busqueda",
+    on_change=limpiar_busqueda
 )
 
 
