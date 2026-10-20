@@ -1,13 +1,6 @@
-import re
-import unicodedata
-import io
-import hashlib
-
 import streamlit as st
 import pandas as pd
 from pathlib import Path
-from PIL import Image, ImageEnhance, ImageFilter
-import pytesseract
 
 
 # =========================================================
@@ -15,27 +8,48 @@ import pytesseract
 # =========================================================
 
 st.set_page_config(
-    page_title="Casanova | Unidades en piso | Centenario / Lala",
+    page_title="Casanova | Control de Unidades - Centenario / Lala",
     page_icon="🚗",
     layout="wide"
 )
 
+
+# =========================================================
+# ARCHIVO EXCEL
+# =========================================================
+
 ARCHIVO_BASE = Path("concentrado.xlsx")
+
 HOJA_BASE = "concentrado"
 HOJA_REFACCIONES = "Refacciones"
 
+TABLA_REFACCIONES = "Pendiente_refacciones"
+
+
+# =========================================================
+# USUARIO Y CONTRASEÑA
+# =========================================================
+
 USUARIO_CORRECTO = "Casanova"
 PASSWORD_CORRECTA = "Casanova.50"
+
+
+# =========================================================
+# COLORES CASANOVA
+# =========================================================
 
 AZUL_MARINO = "#213769"
 AZUL_CASANOVA = "#004876"
 AMARILLO = "#FFB700"
 BLANCO = "#FFFFFF"
 
+
+# =========================================================
+# SEMÁFORO DE DÍAS
+# =========================================================
+
 DIAS_AMBAR = 30
 DIAS_ROJO = 60
-
-CACHE_TTL = 300
 
 
 # =========================================================
@@ -72,7 +86,11 @@ header {{visibility: hidden;}}
     max-width: 1250px;
 }}
 
-/* ENCABEZADO */
+
+/* =================================================
+   ENCABEZADO
+   ================================================= */
+
 .topbar {{
     background: linear-gradient(135deg, {AZUL_MARINO}, {AZUL_CASANOVA});
     border-radius: 18px;
@@ -106,7 +124,11 @@ header {{visibility: hidden;}}
     margin-top: 3px;
 }}
 
-/* SECCIONES */
+
+/* =================================================
+   SECCIONES
+   ================================================= */
+
 .titulo-seccion {{
     color: {AZUL_MARINO};
     font-size: 18px;
@@ -117,7 +139,11 @@ header {{visibility: hidden;}}
     line-height: 1.2;
 }}
 
-/* TARJETAS */
+
+/* =================================================
+   TARJETAS
+   ================================================= */
+
 .tarjeta {{
     background: {BLANCO};
     border: 1px solid #E1E8F3;
@@ -159,7 +185,11 @@ header {{visibility: hidden;}}
     font-style: italic;
 }}
 
-/* BADGES */
+
+/* =================================================
+   BADGES
+   ================================================= */
+
 .badge {{
     display: inline-block;
     padding: 4px 12px;
@@ -188,7 +218,11 @@ header {{visibility: hidden;}}
     color: {AZUL_MARINO};
 }}
 
-/* KPIs */
+
+/* =================================================
+   KPIs
+   ================================================= */
+
 .kpi-azul {{
     background: linear-gradient(135deg, {AZUL_MARINO}, {AZUL_CASANOVA});
     color: white;
@@ -231,14 +265,11 @@ header {{visibility: hidden;}}
     color: {AZUL_MARINO};
 }}
 
-.kpi-subtotal {{
-    color: rgba(255,255,255,0.85);
-    font-size: 13px;
-    font-weight: 700;
-    margin-top: 6px;
-}}
 
-/* IDENTIDAD DE LA UNIDAD */
+/* =================================================
+   IDENTIDAD DE LA UNIDAD
+   ================================================= */
+
 .unidad-header {{
     background: white;
     border: 1px solid #E1E8F3;
@@ -277,7 +308,11 @@ header {{visibility: hidden;}}
     word-break: break-all;
 }}
 
-/* REFACCIONES */
+
+/* =================================================
+   REFACCIONES
+   ================================================= */
+
 .refaccion-card {{
     background: white;
     border: 1px solid #E1E8F3;
@@ -303,7 +338,11 @@ header {{visibility: hidden;}}
     line-height: 1.7;
 }}
 
-/* SIN FOLIOS */
+
+/* =================================================
+   SIN FOLIOS
+   ================================================= */
+
 .sin-folios {{
     background: #E3F6EA;
     border: 1px solid #BFE6CD;
@@ -314,14 +353,22 @@ header {{visibility: hidden;}}
     margin-top: 24px;
 }}
 
-/* SEPARADOR */
+
+/* =================================================
+   SEPARADOR
+   ================================================= */
+
 .separador {{
     height: 1px;
     background: linear-gradient(90deg, transparent, #CBD6E8, transparent);
     margin: 30px 0 6px 0;
 }}
 
-/* INPUTS Y BOTONES */
+
+/* =================================================
+   INPUTS Y BOTONES
+   ================================================= */
+
 .stTextInput label,
 .stTextInput label p,
 .stSelectbox label,
@@ -335,7 +382,6 @@ header {{visibility: hidden;}}
 .stTextInput div[data-baseweb="base-input"] {{
     background: white !important;
     border-radius: 12px !important;
-    color-scheme: light !important;
 }}
 
 .stTextInput input {{
@@ -343,28 +389,11 @@ header {{visibility: hidden;}}
     -webkit-text-fill-color: #172033 !important;
     caret-color: {AZUL_MARINO} !important;
     background: white !important;
-    background-color: white !important;
     border-radius: 12px !important;
     border: 2px solid #D8E1EF !important;
     padding: 12px 16px !important;
     font-size: 16px !important;
     font-weight: 700 !important;
-    color-scheme: light !important;
-    box-shadow: none !important;
-}}
-
-.stTextInput input:hover {{
-    background: white !important;
-    background-color: white !important;
-}}
-
-.stTextInput input:focus {{
-    background: white !important;
-    background-color: white !important;
-    border-color: {AZUL_CASANOVA} !important;
-    box-shadow: 0 0 0 3px rgba(0,72,118,0.12) !important;
-    color: #172033 !important;
-    -webkit-text-fill-color: #172033 !important;
 }}
 
 .stTextInput input::placeholder {{
@@ -372,6 +401,11 @@ header {{visibility: hidden;}}
     -webkit-text-fill-color: #64748B !important;
     font-weight: 600 !important;
     opacity: 1 !important;
+}}
+
+.stTextInput input:focus {{
+    border-color: {AZUL_CASANOVA} !important;
+    box-shadow: 0 0 0 3px rgba(0,72,118,0.12) !important;
 }}
 
 .stTextInput button {{
@@ -427,7 +461,11 @@ div[data-baseweb="popover"] li:hover {{
     background: {AMARILLO};
 }}
 
-/* LOGIN */
+
+/* =================================================
+   LOGIN
+   ================================================= */
+
 .login-box {{
     max-width: 430px;
     margin: 50px auto 24px auto;
@@ -459,7 +497,11 @@ div[data-baseweb="popover"] li:hover {{
     margin-top: 4px;
 }}
 
-/* SEMÁFORO KPI */
+
+/* =================================================
+   SEMÁFORO KPI
+   ================================================= */
+
 .kpi-verde {{
     background: linear-gradient(135deg, #127A3D, #1FA855);
     color: white;
@@ -494,7 +536,11 @@ div[data-baseweb="popover"] li:hover {{
     opacity: 0.95;
 }}
 
-/* RESUMEN DE FOLIOS */
+
+/* =================================================
+   RESUMEN DE FOLIOS
+   ================================================= */
+
 .resumen {{
     display: flex;
     flex-wrap: wrap;
@@ -532,7 +578,11 @@ div[data-baseweb="popover"] li:hover {{
     background: currentColor;
 }}
 
-/* ENCABEZADO DE SECCIÓN CON DÍAS */
+
+/* =================================================
+   ENCABEZADO DE SECCIÓN CON DÍAS
+   ================================================= */
+
 .seccion-head {{
     display: flex;
     align-items: center;
@@ -568,10 +618,20 @@ div[data-baseweb="popover"] li:hover {{
     color: #B42323;
 }}
 
-/* ANIMACIÓN */
+
+/* =================================================
+   ANIMACIÓN
+   ================================================= */
+
 @keyframes aparecer {{
-    from {{ opacity: 0; transform: translateY(8px); }}
-    to {{ opacity: 1; transform: translateY(0); }}
+    from {{
+        opacity: 0;
+        transform: translateY(8px);
+    }}
+    to {{
+        opacity: 1;
+        transform: translateY(0);
+    }}
 }}
 
 .tarjeta,
@@ -585,7 +645,11 @@ div[data-baseweb="popover"] li:hover {{
     animation: aparecer 0.35s ease both;
 }}
 
-/* BOTÓN DE DESCARGA */
+
+/* =================================================
+   BOTÓN DESCARGA
+   ================================================= */
+
 .stDownloadButton > button {{
     border-radius: 12px;
     font-weight: 700;
@@ -602,11 +666,25 @@ div[data-baseweb="popover"] li:hover {{
     color: {AZUL_MARINO};
 }}
 
-/* CELULAR */
+
+/* =================================================
+   CELULAR
+   ================================================= */
+
 @media (max-width: 768px) {{
-    .topbar-titulo {{ font-size: 18px; }}
-    .kpi-numero {{ font-size: 30px; }}
-    .unidad-placa {{ font-size: 18px; }}
+
+    .topbar-titulo {{
+        font-size: 18px;
+    }}
+
+    .kpi-numero {{
+        font-size: 30px;
+    }}
+
+    .unidad-placa {{
+        font-size: 18px;
+    }}
+
 }}
 
 </style>
@@ -623,6 +701,7 @@ aplicar_estilo()
 # =========================================================
 
 def verificar_login(usuario, password):
+
     return (
         usuario.strip() == USUARIO_CORRECTO
         and password == PASSWORD_CORRECTA
@@ -668,139 +747,35 @@ def mostrar_login():
             if verificar_login(usuario, password):
 
                 st.session_state["autenticado"] = True
+
                 st.rerun()
 
             else:
 
-                st.error("Usuario o contraseña incorrectos.")
+                st.error(
+                    "Usuario o contraseña incorrectos."
+                )
 
+
+# =========================================================
+# CONTROL DE SESIÓN
+# =========================================================
 
 if "autenticado" not in st.session_state:
+
     st.session_state["autenticado"] = False
+
 
 if not st.session_state["autenticado"]:
 
     mostrar_login()
+
     st.stop()
 
 
 # =========================================================
-# FUNCIONES GENERALES
+# NORMALIZAR COLUMNAS
 # =========================================================
-
-def tiene_informacion(valor):
-
-    if valor is None:
-        return False
-
-    try:
-
-        if pd.isna(valor):
-            return False
-
-    except Exception:
-        pass
-
-    texto = str(valor).strip()
-
-    if texto == "":
-        return False
-
-    if texto.lower() in ["nan", "none", "null", "nat"]:
-        return False
-
-    return True
-
-
-def valor_visible(valor):
-
-    if not tiene_informacion(valor):
-        return "Sin información"
-
-    return str(valor).strip()
-
-
-def numero_entero(valor):
-
-    if not tiene_informacion(valor):
-        return "Sin información"
-
-    try:
-        return f"{int(float(valor)):,}"
-
-    except Exception:
-        return valor_visible(valor)
-
-
-def modelo_visible(valor):
-
-    if not tiene_informacion(valor):
-        return "Sin información"
-
-    try:
-        return str(int(float(valor)))
-
-    except Exception:
-        return valor_visible(valor)
-
-
-def fecha_visible(valor):
-
-    if not tiene_informacion(valor):
-        return "Sin información"
-
-    try:
-
-        fecha = pd.to_datetime(
-            valor,
-            errors="coerce"
-        )
-
-        if pd.isna(fecha):
-            return valor_visible(valor)
-
-        return fecha.strftime("%d/%m/%Y")
-
-    except Exception:
-        return valor_visible(valor)
-
-
-# =========================================================
-# NORMALIZACIÓN PARA PLACA / SERIE
-# =========================================================
-
-def limpiar_valor(valor):
-
-    if not tiene_informacion(valor):
-        return ""
-
-    texto = str(valor)
-
-    texto = texto.replace("\xa0", " ")
-
-    texto = re.sub(
-        r"\.0+$",
-        "",
-        texto.strip()
-    )
-
-    # Quita TODOS los espacios y guiones
-    texto = re.sub(
-        r"[\s\-]+",
-        "",
-        texto
-    )
-
-    return texto.upper()
-
-
-def limpiar_serie(serie_pandas):
-    return serie_pandas.map(limpiar_valor)
-
-
-def normalizar_texto(valor):
-    return limpiar_valor(valor)
-
 
 def normalizar_columnas(df):
 
@@ -810,15 +785,21 @@ def normalizar_columnas(df):
 
     for columna in df.columns:
 
+        nombre = str(columna)
+
         nombre = (
-            str(columna)
+            nombre
             .replace("\n", " ")
             .replace("\r", " ")
             .replace("\xa0", " ")
         )
 
+        nombre = " ".join(
+            nombre.split()
+        )
+
         columnas.append(
-            " ".join(nombre.split()).strip()
+            nombre.strip()
         )
 
     df.columns = columnas
@@ -826,62 +807,11 @@ def normalizar_columnas(df):
     return df
 
 
-def buscar_columna(df, nombre):
-
-    objetivo = nombre.strip().upper()
-
-    for c in df.columns:
-
-        if str(c).strip().upper() == objetivo:
-            return c
-
-    return None
-
-
-def clave_columna(nombre):
-
-    texto = unicodedata.normalize(
-        "NFKD",
-        str(nombre)
-    )
-
-    texto = "".join(
-        c for c in texto
-        if not unicodedata.combining(c)
-    )
-
-    return re.sub(
-        r"[^a-z0-9]",
-        "",
-        texto.lower()
-    )
-
-
-def obtener(fila, nombre):
-
-    objetivo = clave_columna(nombre)
-
-    for c in fila.index:
-
-        if clave_columna(c) == objetivo:
-            return fila[c]
-
-    return None
-
-
-def texto_ejecutivo(valor):
-
-    if not tiene_informacion(valor):
-        return "Sin ejecutivo asignado"
-
-    return str(valor).strip()
-
-
 # =========================================================
-# CARGA DE DATOS
+# CARGAR CONCENTRADO
 # =========================================================
 
-@st.cache_data(ttl=CACHE_TTL)
+@st.cache_data
 def cargar_concentrado():
 
     df = pd.read_excel(
@@ -889,27 +819,14 @@ def cargar_concentrado():
         sheet_name=HOJA_BASE
     )
 
-    df = normalizar_columnas(df)
-
-    for nombre in ["SERIE", "PLACA"]:
-
-        col = buscar_columna(
-            df,
-            nombre
-        )
-
-        if col is not None and col != nombre:
-
-            df = df.rename(
-                columns={
-                    col: nombre
-                }
-            )
-
-    return df
+    return normalizar_columnas(df)
 
 
-@st.cache_data(ttl=CACHE_TTL)
+# =========================================================
+# CARGAR REFACCIONES
+# =========================================================
+
+@st.cache_data
 def cargar_refacciones():
 
     try:
@@ -927,7 +844,123 @@ def cargar_refacciones():
 
 
 # =========================================================
-# COMPONENTES VISUALES
+# FUNCIONES GENERALES
+# =========================================================
+
+def tiene_informacion(valor):
+
+    if valor is None:
+
+        return False
+
+    try:
+
+        if pd.isna(valor):
+
+            return False
+
+    except Exception:
+
+        pass
+
+    texto = str(valor).strip()
+
+    if texto == "":
+
+        return False
+
+    if texto.lower() in [
+        "nan",
+        "none",
+        "null",
+        "nat"
+    ]:
+
+        return False
+
+    return True
+
+
+def valor_visible(valor):
+
+    if not tiene_informacion(valor):
+
+        return "Sin información"
+
+    return str(valor).strip()
+
+
+def numero_entero(valor):
+
+    if not tiene_informacion(valor):
+
+        return "Sin información"
+
+    try:
+
+        return f"{int(float(valor)):,}"
+
+    except Exception:
+
+        return valor_visible(valor)
+
+
+def modelo_visible(valor):
+
+    if not tiene_informacion(valor):
+
+        return "Sin información"
+
+    try:
+
+        return str(int(float(valor)))
+
+    except Exception:
+
+        return valor_visible(valor)
+
+
+def fecha_visible(valor):
+
+    if not tiene_informacion(valor):
+
+        return "Sin información"
+
+    try:
+
+        fecha = pd.to_datetime(
+            valor,
+            errors="coerce"
+        )
+
+        if pd.isna(fecha):
+
+            return valor_visible(valor)
+
+        return fecha.strftime(
+            "%d/%m/%Y"
+        )
+
+    except Exception:
+
+        return valor_visible(valor)
+
+
+def normalizar_texto(valor):
+
+    if not tiene_informacion(valor):
+
+        return ""
+
+    return (
+        str(valor)
+        .strip()
+        .upper()
+    )
+
+
+# =========================================================
+# TARJETAS
 # =========================================================
 
 def tarjeta(campo, valor):
@@ -935,6 +968,7 @@ def tarjeta(campo, valor):
     clase = "valor"
 
     if valor == "Sin información":
+
         clase = "valor valor-vacio"
 
     return f"""
@@ -948,49 +982,41 @@ def tarjeta(campo, valor):
 def tarjeta_badge(campo, valor):
 
     if valor == "Sin información":
+
         return tarjeta(campo, valor)
 
     texto = valor.lower()
 
-    if any(
-        p in texto
-        for p in [
-            "finaliz",
-            "complet",
-            "cerrad",
-            "entreg",
-            "listo",
-            "vigente",
-            "activ"
-        ]
-    ):
+    if any(p in texto for p in [
+        "finaliz",
+        "complet",
+        "cerrad",
+        "entreg",
+        "listo",
+        "vigente",
+        "activ"
+    ]):
 
         clase = "badge-verde"
 
-    elif any(
-        p in texto
-        for p in [
-            "cancel",
-            "venc",
-            "rechaz",
-            "detenid"
-        ]
-    ):
+    elif any(p in texto for p in [
+        "cancel",
+        "venc",
+        "rechaz",
+        "detenid"
+    ]):
 
         clase = "badge-rojo"
 
-    elif any(
-        p in texto
-        for p in [
-            "pend",
-            "proceso",
-            "espera",
-            "revis",
-            "abiert",
-            "tramite",
-            "trámite"
-        ]
-    ):
+    elif any(p in texto for p in [
+        "pend",
+        "proceso",
+        "espera",
+        "revis",
+        "abiert",
+        "tramite",
+        "trámite"
+    ]):
 
         clase = "badge-amarillo"
 
@@ -1009,10 +1035,14 @@ def tarjeta_badge(campo, valor):
 
 
 def mostrar_tarjetas(items):
+    """
+    items = lista de (tipo, campo, valor)
+    tipo:
+        "t" = tarjeta normal
+        "b" = tarjeta con badge
+    """
 
-    columnas = st.columns(
-        len(items)
-    )
+    columnas = st.columns(len(items))
 
     for col, (tipo, campo, valor) in zip(
         columnas,
@@ -1044,24 +1074,30 @@ def mostrar_tarjetas(items):
 def dias_numero_o_none(valor):
 
     if not tiene_informacion(valor):
+
         return None
 
     try:
+
         return int(float(valor))
 
     except Exception:
+
         return None
 
 
 def nivel_dias(dias):
 
     if dias is None:
+
         return None
 
     if dias >= DIAS_ROJO:
+
         return "rojo"
 
     if dias >= DIAS_AMBAR:
+
         return "ambar"
 
     return "verde"
@@ -1087,7 +1123,7 @@ def titulo_seccion(texto, dias=None):
             f'{texto}'
             f'</div>'
             f'<div class="dias-pill dias-{nivel}">'
-            f'⏱️ {dias:,} días'
+            f'⏱ {dias:,} días'
             f'</div>'
             f'</div>'
         )
@@ -1114,6 +1150,7 @@ col1, col2 = st.columns(
     [5, 1],
     vertical_alignment="center"
 )
+
 
 with col1:
 
@@ -1143,14 +1180,7 @@ with col2:
     ):
 
         st.session_state["autenticado"] = False
-        st.rerun()
 
-    if st.button(
-        "🔄 Actualizar datos",
-        use_container_width=True
-    ):
-
-        st.cache_data.clear()
         st.rerun()
 
 
@@ -1176,814 +1206,44 @@ except Exception as e:
 df_refacciones = cargar_refacciones()
 
 
-if (
-    "SERIE" not in df.columns
-    or
-    "PLACA" not in df.columns
-):
-
-    st.error(
-        "No se encontraron las columnas "
-        "SERIE y/o PLACA en la hoja "
-        f"'{HOJA_BASE}'. Columnas detectadas:"
-    )
-
-    st.code(
-        ", ".join(
-            df.columns.astype(str)
-        )
-    )
-
-    st.stop()
-
-
-# =========================================================
-# CLAVES LIMPIAS
-# =========================================================
-
-df = df.copy()
-
-df["_PLACA_KEY"] = limpiar_serie(
-    df["PLACA"]
-)
-
-df["_SERIE_KEY"] = limpiar_serie(
-    df["SERIE"]
-)
-
-df["_UNIDAD_KEY"] = df[
-    "_SERIE_KEY"
-].where(
-    df["_SERIE_KEY"] != "",
-    df["_PLACA_KEY"]
-)
-
-
 # =========================================================
 # TOTAL DE UNIDADES
 # =========================================================
 
-claves_validas = df.loc[
-    df["_UNIDAD_KEY"] != "",
-    "_UNIDAD_KEY"
-]
+if "SERIE" in df.columns:
 
-total_unidades = claves_validas.nunique()
-
-
-def mostrar_diagnostico():
-
-    filas_totales = len(df)
-
-    sin_serie = int(
-        (
-            df["_SERIE_KEY"] == ""
-        ).sum()
+    series_validas = (
+        df["SERIE"]
+        .astype("string")
+        .fillna("")
+        .str.strip()
+        .str.upper()
     )
 
-    sin_placa = int(
-        (
-            df["_PLACA_KEY"] == ""
-        ).sum()
-    )
-
-    sin_ambas = int(
-        (
-            (df["_SERIE_KEY"] == "")
-            &
-            (df["_PLACA_KEY"] == "")
-        ).sum()
-    )
-
-    series_repetidas = int(
-        df.loc[
-            df["_SERIE_KEY"] != "",
-            "_SERIE_KEY"
-        ].duplicated().sum()
-    )
-
-    with st.expander(
-        "🧪 Diagnóstico de datos"
-    ):
-
-        st.write(
-            f"Filas en el Excel: "
-            f"**{filas_totales:,}**"
-        )
-
-        st.write(
-            f"Unidades únicas contadas: "
-            f"**{total_unidades:,}**"
-        )
-
-        st.write(
-            f"Filas sin SERIE: "
-            f"**{sin_serie:,}**"
-        )
-
-        st.write(
-            f"Filas sin PLACA: "
-            f"**{sin_placa:,}**"
-        )
-
-        st.write(
-            f"Filas sin SERIE ni PLACA "
-            f"(no se cuentan): **{sin_ambas:,}**"
-        )
-
-        st.write(
-            f"Filas con SERIE repetida: "
-            f"**{series_repetidas:,}**"
-        )
-
-        if series_repetidas:
-
-            repetidas = df[
-                (
-                    df["_SERIE_KEY"] != ""
-                )
-                &
-                df["_SERIE_KEY"].duplicated(
-                    keep=False
-                )
-            ][
-                ["PLACA", "SERIE"]
-            ].sort_values(
-                "SERIE"
-            )
-
-            st.dataframe(
-                repetidas,
-                use_container_width=True
-            )
-
-
-# =========================================================
-# OCR - NORMALIZAR TEXTO
-# =========================================================
-
-def normalizar_texto_ocr(texto):
-
-    if not texto:
-        return ""
-
-    texto = str(texto).upper()
-
-    reemplazos = {
-        "—": "-",
-        "–": "-",
-        "−": "-",
-        "_": "-",
-        "O": "O",
-    }
-
-    for viejo, nuevo in reemplazos.items():
-        texto = texto.replace(
-            viejo,
-            nuevo
-        )
-
-    texto = re.sub(
-        r"[^A-Z0-9\-\s]",
-        " ",
-        texto
-    )
-
-    texto = re.sub(
-        r"\s+",
-        " ",
-        texto
-    ).strip()
-
-    return texto
-
-
-# =========================================================
-# OCR - VALIDAR POSIBLE PLACA
-# =========================================================
-
-def parece_placa(texto):
-
-    if not texto:
-        return False
-
-    limpio = limpiar_valor(texto)
-
-    # Longitud razonable para una placa
-    if len(limpio) < 5 or len(limpio) > 9:
-        return False
-
-    # Debe contener letras Y números
-    tiene_letras = bool(
-        re.search(
-            r"[A-Z]",
-            limpio
-        )
-    )
-
-    tiene_numeros = bool(
-        re.search(
-            r"\d",
-            limpio
-        )
-    )
-
-    if not tiene_letras or not tiene_numeros:
-        return False
-
-    # Evitar palabras comunes que aparecen
-    # en las placas / fotografías
-    palabras_prohibidas = {
-        "MEXICO",
-        "MEXIC",
-        "CIUDAD",
-        "TRANSPORTE",
-        "PRIVADO",
-        "AUTOMOVIL",
-        "AUTOMOVIL",
-        "GOBIERNO",
-        "ESTADO",
-        "CDMX",
-        "DISTRITO",
-        "FEDERAL",
-        "VEHICULO",
-        "VEHICUL",
-        "NISSAN",
-        "CHEVROLET",
-        "CASANOVA",
-    }
-
-    if limpio in palabras_prohibidas:
-        return False
-
-    return True
-
-
-# =========================================================
-# OCR - EXTRAER POSIBLES PLACAS
-# =========================================================
-
-def extraer_candidatos_placa(texto):
-
-    if not texto:
-        return []
-
-    texto = normalizar_texto_ocr(texto)
-
-    candidatos = []
-
-    # -----------------------------------------------------
-    # 1. Buscar bloques separados por espacios
-    # -----------------------------------------------------
-
-    tokens = re.findall(
-        r"[A-Z0-9]+(?:-[A-Z0-9]+)*",
-        texto
-    )
-
-    for token in tokens:
-
-        limpio = limpiar_valor(token)
-
-        if parece_placa(limpio):
-            candidatos.append(limpio)
-
-    # -----------------------------------------------------
-    # 2. Buscar combinaciones de 2 o 3 tokens consecutivos
-    #
-    # Ejemplo:
-    #
-    # MKJ-
-    # 121-B
-    #
-    # puede venir separado por OCR.
-    # -----------------------------------------------------
-
-    tokens_limpios = []
-
-    for token in tokens:
-
-        token_limpio = re.sub(
-            r"[^A-Z0-9]",
-            "",
-            token
-        )
-
-        if token_limpio:
-            tokens_limpios.append(
-                token_limpio
-            )
-
-    for cantidad in [2, 3]:
-
-        for i in range(
-            len(tokens_limpios) - cantidad + 1
-        ):
-
-            combinado = "".join(
-                tokens_limpios[
-                    i:i + cantidad
-                ]
-            )
-
-            if parece_placa(combinado):
-
-                candidatos.append(
-                    combinado
-                )
-
-    # -----------------------------------------------------
-    # 3. Buscar patrones conocidos de placas
-    # pero sin amarrarnos a uno solo.
-    # -----------------------------------------------------
-
-    patrones = [
-
-        # ABC123D
-        r"\b[A-Z]{3}\d{3}[A-Z]\b",
-
-        # ABC123
-        r"\b[A-Z]{3}\d{3}\b",
-
-        # A12BCD
-        r"\b[A-Z]\d{2}[A-Z]{3}\b",
-
-        # A12BC
-        r"\b[A-Z]\d{2}[A-Z]{2,4}\b",
-
-        # AB123CD
-        r"\b[A-Z]{2}\d{3}[A-Z]{1,2}\b",
-
-        # ABC12
-        r"\b[A-Z]{3}\d{2,3}\b",
-
-        # 123ABC
-        r"\b\d{2,3}[A-Z]{3}\b",
-
-        # Combinaciones generales
-        r"\b[A-Z0-9]{6,8}\b",
+    series_validas = series_validas[
+        series_validas != ""
     ]
 
-    for patron in patrones:
-
-        encontrados = re.findall(
-            patron,
-            texto
-        )
-
-        for encontrado in encontrados:
-
-            limpio = limpiar_valor(
-                encontrado
-            )
-
-            if parece_placa(limpio):
-
-                candidatos.append(
-                    limpio
-                )
-
-    # -----------------------------------------------------
-    # Quitar duplicados
-    # -----------------------------------------------------
-
-    resultado = []
-
-    vistos = set()
-
-    for candidato in candidatos:
-
-        candidato = limpiar_valor(
-            candidato
-        )
-
-        if not candidato:
-            continue
-
-        if candidato in vistos:
-            continue
-
-        vistos.add(candidato)
-
-        resultado.append(
-            candidato
-        )
-
-    return resultado
-
-
-# =========================================================
-# OCR - ELEGIR LA MEJOR PLACA
-# =========================================================
-
-def seleccionar_mejor_placa(candidatos):
-
-    if not candidatos:
-        return ""
-
-    # Palabras que NO queremos seleccionar
-    palabras_malas = {
-        "MEXICO",
-        "CIUDAD",
-        "TRANSPORTE",
-        "PRIVADO",
-        "AUTOMOVIL",
-        "GOBIERNO",
-        "VEHICULO",
-        "NISSAN",
-        "CHEVROLET",
-        "CASANOVA",
-    }
-
-    candidatos_validos = []
-
-    for candidato in candidatos:
-
-        candidato = limpiar_valor(
-            candidato
-        )
-
-        if not parece_placa(candidato):
-            continue
-
-        if candidato in palabras_malas:
-            continue
-
-        # Puntaje
-        puntos = 0
-
-        # Longitud habitual
-        if 6 <= len(candidato) <= 8:
-            puntos += 4
-
-        # Letras y números
-        if re.search(r"[A-Z]", candidato):
-            puntos += 2
-
-        if re.search(r"\d", candidato):
-            puntos += 2
-
-        # Si mezcla letras y números de forma clara
-        if (
-            re.search(r"[A-Z]", candidato)
-            and
-            re.search(r"\d", candidato)
-        ):
-            puntos += 3
-
-        # Penalizar cadenas demasiado largas
-        if len(candidato) >= 9:
-            puntos -= 2
-
-        # Penalizar cadenas con demasiadas letras
-        if (
-            sum(c.isalpha() for c in candidato)
-            >= 7
-        ):
-            puntos -= 2
-
-        candidatos_validos.append(
-            (
-                puntos,
-                candidato
-            )
-        )
-
-    if not candidatos_validos:
-        return ""
-
-    candidatos_validos.sort(
-        key=lambda x: (
-            x[0],
-            len(x[1])
-        ),
-        reverse=True
+    total_unidades = (
+        series_validas
+        .nunique()
     )
 
-    return candidatos_validos[0][1]
+else:
+
+    total_unidades = 0
 
 
 # =========================================================
-# OCR - LEER PLACA DESDE FOTO
+# BUSCADOR
 # =========================================================
 
-def leer_texto_foto(imagen_bytes):
-
-    try:
-
-        img_original = Image.open(
-            io.BytesIO(imagen_bytes)
-        ).convert("RGB")
-
-        resultados_ocr = []
-
-        # =================================================
-        # GENERAR DIFERENTES VERSIONES DE LA FOTO
-        # =================================================
-
-        imagenes = []
-
-        # Original
-        imagenes.append(
-            img_original
-        )
-
-        # Imagen ampliada
-        ancho, alto = img_original.size
-
-        if ancho < 1800:
-
-            imagen_ampliada = img_original.resize(
-                (
-                    ancho * 2,
-                    alto * 2
-                ),
-                Image.Resampling.LANCZOS
-            )
-
-        else:
-
-            imagen_ampliada = img_original
-
-        imagenes.append(
-            imagen_ampliada
-        )
-
-        # Escala de grises
-        gris = imagen_ampliada.convert(
-            "L"
-        )
-
-        imagenes.append(
-            gris
-        )
-
-        # Más contraste
-        contraste = ImageEnhance.Contrast(
-            gris
-        ).enhance(2.0)
-
-        imagenes.append(
-            contraste
-        )
-
-        # Más nitidez
-        nitida = contraste.filter(
-            ImageFilter.SHARPEN
-        )
-
-        imagenes.append(
-            nitida
-        )
-
-        # =================================================
-        # CONFIGURACIONES OCR
-        # =================================================
-
-        configuraciones = [
-            "--psm 6",
-            "--psm 11",
-            "--psm 12",
-            "--psm 7",
-        ]
-
-        # =================================================
-        # EJECUTAR OCR
-        # =================================================
-
-        for imagen in imagenes:
-
-            for config in configuraciones:
-
-                try:
-
-                    texto = pytesseract.image_to_string(
-                        imagen,
-                        config=(
-                            config
-                            +
-                            " -c "
-                            "tessedit_char_whitelist="
-                            "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                            "abcdefghijklmnopqrstuvwxyz"
-                            "0123456789-"
-                        )
-                    )
-
-                    if texto:
-
-                        resultados_ocr.append(
-                            texto
-                        )
-
-                except Exception:
-                    continue
-
-        # =================================================
-        # EXTRAER CANDIDATOS
-        # =================================================
-
-        todos_candidatos = []
-
-        for texto in resultados_ocr:
-
-            candidatos = extraer_candidatos_placa(
-                texto
-            )
-
-            todos_candidatos.extend(
-                candidatos
-            )
-
-        # =================================================
-        # SELECCIONAR MEJOR RESULTADO
-        # =================================================
-
-        placa = seleccionar_mejor_placa(
-            todos_candidatos
-        )
-
-        if placa:
-            return placa
-
-        # =================================================
-        # ÚLTIMO INTENTO:
-        # ANALIZAR CADA LÍNEA DEL OCR
-        # =================================================
-
-        for texto in resultados_ocr:
-
-            for linea in texto.splitlines():
-
-                linea = normalizar_texto_ocr(
-                    linea
-                )
-
-                if not linea:
-                    continue
-
-                # Quitar palabras comunes
-                linea_sin_texto = re.sub(
-                    r"\b(MEXICO|CIUDAD|TRANSPORTE|PRIVADO|AUTOMOVIL|GOBIERNO)\b",
-                    " ",
-                    linea
-                )
-
-                candidatos = extraer_candidatos_placa(
-                    linea_sin_texto
-                )
-
-                placa = seleccionar_mejor_placa(
-                    candidatos
-                )
-
-                if placa:
-                    return placa
-
-        return ""
-
-    except Exception:
-        return ""
-
-
-# =========================================================
-# ENCABEZADO
-# =========================================================
-
-titulo_seccion(
-    "🔎 Buscar unidad"
-)
-
-
-# =========================================================
-# SESSION STATE
-# =========================================================
-
-if "busqueda" not in st.session_state:
-    st.session_state["busqueda"] = ""
-
-if "foto_procesada" not in st.session_state:
-    st.session_state["foto_procesada"] = ""
-
-if "msg_foto" not in st.session_state:
-    st.session_state["msg_foto"] = ("", "")
-
-
-# =========================================================
-# BUSCAR CON FOTO
-# =========================================================
-
-foto = None
-
-usar_foto = st.toggle(
-    "📷 Buscar con foto (galería o cámara trasera)",
-    value=False
-)
-
-if usar_foto:
-
-    foto = st.file_uploader(
-        "Selecciona una foto o toma una nueva",
-        type=[
-            "jpg",
-            "jpeg",
-            "png",
-            "webp"
-        ]
-    )
-
-    st.caption(
-        "En el celular, al pulsar el botón "
-        "elige 'Galería' o 'Tomar foto' "
-        "(cámara trasera)."
-    )
-
-
-# =========================================================
-# PROCESAR FOTO
-# =========================================================
-
-if foto is not None:
-
-    datos_foto = foto.getvalue()
-
-    hash_foto = hashlib.md5(
-        datos_foto
-    ).hexdigest()
-
-    if (
-        st.session_state["foto_procesada"]
-        != hash_foto
-    ):
-
-        st.session_state[
-            "foto_procesada"
-        ] = hash_foto
-
-        with st.spinner(
-            "🔎 Leyendo placa / serie..."
-        ):
-
-            texto_ocr = leer_texto_foto(
-                datos_foto
-            )
-
-        if texto_ocr:
-
-            st.session_state[
-                "busqueda"
-            ] = texto_ocr
-
-            st.session_state[
-                "msg_foto"
-            ] = (
-                "ok",
-                f"📷 Placa detectada: "
-                f"{texto_ocr} "
-                "— revisa que sea correcta."
-            )
-
-        else:
-
-            st.session_state[
-                "msg_foto"
-            ] = (
-                "warn",
-                "No pude identificar la placa. "
-                "Intenta con una foto más cercana "
-                "a la placa, de frente y con buena "
-                "iluminación."
-            )
-
-    tipo_msg, texto_msg = st.session_state[
-        "msg_foto"
-    ]
-
-    if tipo_msg == "ok":
-
-        st.success(
-            texto_msg
-        )
-
-    elif tipo_msg == "warn":
-
-        st.warning(
-            texto_msg
-        )
-
-
-# =========================================================
-# CAMPO DE BÚSQUEDA
-# =========================================================
+titulo_seccion("🔎 Buscar unidad")
 
 busqueda = st.text_input(
     "Busca por PLACA o SERIE",
-    placeholder=(
-        "Ejemplo: PDN1295 "
-        "o número de serie..."
-    ),
-    label_visibility="collapsed",
-    key="busqueda"
+    placeholder="Ejemplo: PDN1295 o número de serie...",
+    label_visibility="collapsed"
 )
 
 
@@ -2002,79 +1262,77 @@ if not busqueda:
 <div class="kpi-numero">
 {total_unidades:,}
 </div>
-<div class="kpi-subtotal">
-Centenario / Lala
-</div>
 </div>
 """,
         unsafe_allow_html=True
     )
 
     st.info(
-        "Escribe una placa o número de serie "
-        "para consultar la unidad."
+        "Escribe una placa o número de serie para consultar la unidad."
     )
-
-    mostrar_diagnostico()
 
     st.stop()
 
 
 # =========================================================
-# BUSCAR
+# PREPARAR BÚSQUEDA
 # =========================================================
 
 criterio = normalizar_texto(
     busqueda
 )
 
-if criterio == "":
 
-    st.warning(
-        "Escribe una placa o serie válida."
-    )
+# =========================================================
+# PLACAS Y SERIES
+# =========================================================
 
-    st.stop()
+placas = (
+    df["PLACA"]
+    .astype("string")
+    .fillna("")
+    .str.strip()
+    .str.upper()
+)
+
+series = (
+    df["SERIE"]
+    .astype("string")
+    .fillna("")
+    .str.strip()
+    .str.upper()
+)
 
 
-# Exacto primero
-exacto = df[
-    (
-        df["_PLACA_KEY"] == criterio
+# =========================================================
+# BUSCAR
+# =========================================================
+
+resultado = df[
+    placas.str.contains(
+        criterio,
+        case=False,
+        na=False,
+        regex=False
     )
     |
-    (
-        df["_SERIE_KEY"] == criterio
+    series.str.contains(
+        criterio,
+        case=False,
+        na=False,
+        regex=False
     )
-]
+].copy()
 
 
-if not exacto.empty:
-
-    resultado = exacto.copy()
-
-else:
-
-    resultado = df[
-        df["_PLACA_KEY"].str.contains(
-            criterio,
-            regex=False,
-            na=False
-        )
-        |
-        df["_SERIE_KEY"].str.contains(
-            criterio,
-            regex=False,
-            na=False
-        )
-    ].copy()
-
+# =========================================================
+# SIN RESULTADOS
+# =========================================================
 
 if resultado.empty:
 
     st.warning(
-        f"No se encontró ninguna unidad "
-        f"con: {busqueda}"
+        f"No se encontró ninguna unidad con: {busqueda}"
     )
 
     st.stop()
@@ -2084,32 +1342,31 @@ if resultado.empty:
 # SELECCIONAR UNIDAD
 # =========================================================
 
-resultado = resultado.reset_index(
-    drop=True
-)
-
 if len(resultado) > 1:
 
-    st.caption(
-        f"Se encontraron "
-        f"{len(resultado):,} coincidencias."
-    )
+    opciones = []
 
-    def etiqueta(i):
+    for _, fila in resultado.iterrows():
 
-        fila = resultado.iloc[i]
-
-        return (
-            f"{valor_visible(fila.get('PLACA'))} | "
-            f"{valor_visible(fila.get('SERIE'))}"
+        placa_opcion = valor_visible(
+            fila.get("PLACA")
         )
 
-    posicion = st.selectbox(
+        serie_opcion = valor_visible(
+            fila.get("SERIE")
+        )
+
+        opciones.append(
+            f"{placa_opcion} | {serie_opcion}"
+        )
+
+    seleccion = st.selectbox(
         "Selecciona la unidad",
-        options=list(
-            range(len(resultado))
-        ),
-        format_func=etiqueta
+        opciones
+    )
+
+    posicion = opciones.index(
+        seleccion
     )
 
     unidad = resultado.iloc[
@@ -2142,14 +1399,19 @@ dias_piso = unidad.get(
     "DÍAS EN PISO"
 )
 
+
 if tiene_informacion(
     dias_piso
 ):
 
     try:
 
+        dias_numero = int(
+            float(dias_piso)
+        )
+
         texto_dias = (
-            f"{int(float(dias_piso)):,} días"
+            f"{dias_numero:,} días"
         )
 
     except Exception:
@@ -2160,9 +1422,7 @@ if tiene_informacion(
 
 else:
 
-    texto_dias = (
-        "🆕 Recién ingresado"
-    )
+    texto_dias = "🆕 Recién ingresado"
 
 
 # =========================================================
@@ -2183,9 +1443,6 @@ with col1:
 <div class="kpi-numero">
 {total_unidades:,}
 </div>
-<div class="kpi-subtotal">
-Centenario / Lala
-</div>
 </div>
 """,
         unsafe_allow_html=True
@@ -2205,18 +1462,14 @@ with col2:
         "ambar": "kpi-ambar",
         "rojo": "kpi-rojo",
         None: "kpi-amarillo"
-    }[
-        nivel_piso
-    ]
+    }[nivel_piso]
 
     texto_nivel = {
         "verde": "✅ Rotación normal",
         "ambar": "⚠️ Requiere atención",
         "rojo": "🚨 Tiempo crítico en piso",
         None: ""
-    }[
-        nivel_piso
-    ]
+    }[nivel_piso]
 
     sub_html = (
         f'<div class="kpi-sub">'
@@ -2246,58 +1499,20 @@ with col2:
 # IDENTIDAD DE LA UNIDAD
 # =========================================================
 
-ejecutivo_ziga = obtener(
-    unidad,
-    "Ziga_Talleres.Ejecutivo responsable"
-)
-
-
-if tiene_informacion(
-    ejecutivo_ziga
-):
-
-    estilo_ejecutivo = ""
-
-else:
-
-    estilo_ejecutivo = (
-        ' style="color:#A7B1C2;'
-        'font-style:italic;"'
-    )
-
-
-ejecutivo_html = (
-    '<div>'
-    '<div class="unidad-serie-label">'
-    'EJECUTIVO RESPONSABLE'
-    '</div>'
-    f'<div class="unidad-serie"'
-    f'{estilo_ejecutivo}>'
-    f'{texto_ejecutivo(ejecutivo_ziga)}'
-    '</div>'
-    '</div>'
-)
-
-
 st.markdown(
     f"""
 <div class="unidad-header">
 <div class="unidad-placa">
 {placa}
 </div>
-
 <div>
 <div class="unidad-serie-label">
 NÚMERO DE SERIE
 </div>
-
 <div class="unidad-serie">
 {serie}
 </div>
 </div>
-
-{ejecutivo_html}
-
 </div>
 """,
     unsafe_allow_html=True
@@ -2332,73 +1547,74 @@ if not df_refacciones.empty:
 
     if (
         col_serie_ref is not None
-        and
-        col_folio_ref is not None
-        and
-        col_actividad_ref is not None
+        and col_folio_ref is not None
+        and col_actividad_ref is not None
     ):
 
         ref = df_refacciones.copy()
 
-        ref["_SERIE_BUSQUEDA"] = limpiar_serie(
+        ref["_SERIE_BUSQUEDA"] = (
             ref[col_serie_ref]
+            .astype("string")
+            .fillna("")
+            .str.strip()
+            .str.upper()
         )
 
-        serie_actual = unidad.get(
-            "_SERIE_KEY",
-            ""
+        serie_actual = normalizar_texto(
+            serie
         )
 
-        if serie_actual:
+        ref = ref[
+            ref["_SERIE_BUSQUEDA"]
+            == serie_actual
+        ].copy()
 
-            ref = ref[
-                ref["_SERIE_BUSQUEDA"]
-                == serie_actual
-            ].copy()
+        for folio, grupo in ref.groupby(
+            col_folio_ref,
+            sort=False
+        ):
 
-            for folio, grupo in ref.groupby(
-                col_folio_ref,
-                sort=False
+            if not tiene_informacion(
+                folio
             ):
 
+                continue
+
+            actividades = []
+
+            for actividad in grupo[
+                col_actividad_ref
+            ]:
+
                 if not tiene_informacion(
-                    folio
+                    actividad
                 ):
+
                     continue
 
-                actividades = []
+                texto = str(
+                    actividad
+                ).strip()
 
-                for actividad in grupo[
-                    col_actividad_ref
-                ]:
+                if not any(
+                    texto.casefold()
+                    == existente.casefold()
+                    for existente in actividades
+                ):
 
-                    if not tiene_informacion(
-                        actividad
-                    ):
-                        continue
-
-                    texto = str(
-                        actividad
-                    ).strip()
-
-                    if not any(
-                        texto.casefold()
-                        == existente.casefold()
-                        for existente in actividades
-                    ):
-
-                        actividades.append(
-                            texto
-                        )
-
-                if actividades:
-
-                    grupos_refacciones.append(
-                        (
-                            str(folio).strip(),
-                            actividades
-                        )
+                    actividades.append(
+                        texto
                     )
+
+            if actividades:
+
+                grupos_refacciones.append(
+                    (
+                        str(folio).strip(),
+                        actividades
+                    )
+                )
 
 
 # =========================================================
@@ -2470,6 +1686,7 @@ chips_html = "".join(
 
     for nombre, activo
     in folios_resumen
+
 )
 
 
@@ -2528,6 +1745,8 @@ mostrar_tarjetas([
         valor_visible(
             unidad.get("SUBESTATUS")
         )
+    ),
+
 ])
 
 
@@ -2570,10 +1789,47 @@ mostrar_tarjetas([
                 "UNIDAD NEGOCIO"
             )
         )
-    )
+    ),
 
 ])
 
+
+mostrar_tarjetas([
+
+    (
+        "t",
+        "GPS",
+        valor_visible(
+            unidad.get("GPS")
+        )
+    ),
+
+    (
+        "t",
+        "PLATAFORMA",
+        valor_visible(
+            unidad.get(
+                "PLATAFORMA"
+            )
+        )
+    ),
+
+    (
+        "t",
+        "¿REPORTA?",
+        valor_visible(
+            unidad.get(
+                "¿REPORTA?"
+            )
+        )
+    ),
+
+])
+
+
+# =========================================================
+# CONTROL DE FOLIOS ABIERTOS
+# =========================================================
 
 hay_folio_abierto = False
 
@@ -2631,7 +1887,7 @@ if tiene_informacion(
                     "Gestorías1.Fecha de creación"
                 )
             )
-        )
+        ),
 
     ])
 
@@ -2665,7 +1921,7 @@ if tiene_informacion(
                     "Gestorías1.Conceptos"
                 )
             )
-        )
+        ),
 
     ])
 
@@ -2723,7 +1979,7 @@ if tiene_informacion(
                     "Mantenimiento.ESTATUS DEL FOLIO"
                 )
             )
-        )
+        ),
 
     ])
 
@@ -2747,7 +2003,7 @@ if tiene_informacion(
                     "Mantenimiento.dias"
                 )
             )
-        )
+        ),
 
     ])
 
@@ -2805,7 +2061,7 @@ if tiene_informacion(
                     "Ziga_Talleres.Área del taller activa"
                 )
             )
-        )
+        ),
 
     ])
 
@@ -2831,43 +2087,7 @@ if tiene_informacion(
             )
         ),
 
-        (
-            "t",
-            "EJECUTIVO RESPONSABLE",
-            texto_ejecutivo(
-                obtener(
-                    unidad,
-                    "Ziga_Talleres.Ejecutivo responsable"
-                )
-            )
-        )
-
     ])
-
-    if not any(
-
-        clave_columna(c)
-        ==
-        clave_columna(
-            "Ziga_Talleres.Ejecutivo responsable"
-        )
-
-        for c in unidad.index
-
-    ):
-
-        st.warning(
-            "No se encontró la columna "
-            "'Ziga_Talleres.Ejecutivo responsable' "
-            "en la hoja concentrado. Columnas "
-            "de Ziga detectadas: "
-            +
-            ", ".join(
-                c
-                for c in unidad.index
-                if "ziga" in clave_columna(c)
-            )
-        )
 
 
 # =========================================================
@@ -2923,7 +2143,7 @@ if tiene_informacion(
                     "Siniestros2.dias"
                 )
             )
-        )
+        ),
 
     ])
 
@@ -2947,13 +2167,13 @@ if tiene_informacion(
                     "Siniestros2.FECHA SINIESTRO"
                 )
             )
-        )
+        ),
 
     ])
 
 
 # =========================================================
-# REFACCIONES PENDIENTES
+# MOSTRAR REFACCIONES
 # =========================================================
 
 if grupos_refacciones:
@@ -2979,11 +2199,9 @@ if grupos_refacciones:
 <div class="refaccion-folio">
 FOLIO WS: {folio}
 </div>
-
 <div class="refaccion-actividad">
 {actividades_html}
 </div>
-
 </div>
 """,
             unsafe_allow_html=True
@@ -3012,16 +2230,7 @@ if not hay_folio_abierto:
 
 separador()
 
-
-ficha_serie = unidad.drop(
-    labels=[
-        "_PLACA_KEY",
-        "_SERIE_KEY",
-        "_UNIDAD_KEY"
-    ],
-    errors="ignore"
-).dropna()
-
+ficha_serie = unidad.dropna()
 
 ficha_df = pd.DataFrame({
 
@@ -3035,22 +2244,18 @@ ficha_df = pd.DataFrame({
 
 
 st.download_button(
-
     "⬇️ Descargar ficha de la unidad (CSV)",
-
     data=ficha_df.to_csv(
         index=False
     ).encode("utf-8-sig"),
-
     file_name=f"ficha_{placa}.csv",
-
     mime="text/csv"
-
 )
 
 
-mostrar_diagnostico()
-
+# =========================================================
+# PIE
+# =========================================================
 
 st.caption(
     "Casanova | Control de Unidades"
