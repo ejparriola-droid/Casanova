@@ -1020,6 +1020,12 @@ DIGITO_A_LETRA = {"0": "O", "1": "I", "2": "Z", "5": "S", "8": "B", "6": "G"}
 
 VIN_VALIDO = re.compile(r"^[A-HJ-NPR-Z0-9]{17}$")
 
+# Texto de la placa que NUNCA debe tomarse como placa ni serie
+PALABRAS_PROHIBIDAS = [
+    "TRANSPORTE", "PRIVADO", "AUTOMOVIL", "AUTOMOV", "CIUDAD",
+    "MEXICO", "GOBIERNO", "PARTICULAR", "SERVICIO", "PUBLICO",
+]
+
 # Formatos de placa (L = letra, D = dígito), sin guiones
 #   R20-BSD   -> LDD-LLL      (CDMX)
 #   D06-BND   -> LDD-LLL      (CDMX)
@@ -1163,6 +1169,11 @@ def placas_texto_grande(img_preparada, psm):
         if altura < h_max * 0.5:
             continue
 
+        # Ignorar renglones que son leyendas de la placa
+        sin_simbolos = re.sub(r"[^A-Z]", "", texto)
+        if any(p in sin_simbolos for p in PALABRAS_PROHIBIDAS):
+            continue
+
         tiene_guion = "-" in texto
 
         for placa in placas_en_linea(texto):
@@ -1195,15 +1206,25 @@ def extraer_vin(texto):
 
         for i in range(len(base_vin) - 16):
 
+            # Un VIN real NUNCA lleva I, O, Q, así que NO se "corrigen":
+            # si la ventana trae alguna, no es un VIN.
             v = base_vin[i:i + 17]
-            v = v.replace("O", "0").replace("Q", "0").replace("I", "1")
 
-            if (
-                VIN_VALIDO.match(v)
-                and any(c.isdigit() for c in v)
-                and any(c.isalpha() for c in v)
-            ):
-                candidatos.append((v, 20 + extra))
+            if not VIN_VALIDO.match(v):
+                continue
+
+            # Un VIN real tiene varios dígitos; el texto normal casi ninguno
+            if sum(c.isdigit() for c in v) < 4:
+                continue
+
+            if sum(c.isalpha() for c in v) < 3:
+                continue
+
+            # Descartar leyendas de la placa
+            if any(p in v for p in PALABRAS_PROHIBIDAS):
+                continue
+
+            candidatos.append((v, 20 + extra))
 
     return candidatos
 
