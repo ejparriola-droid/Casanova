@@ -957,49 +957,43 @@ def preparar_imagen_ocr(imagen):
 
 
 def corregir_errores_ocr(candidato):
-    candidato = candidato.upper().replace(" ", "")
+    """Limpia el resultado del OCR y deja únicamente letras y números."""
+    candidato = str(candidato).upper().replace(" ", "")
     candidato = candidato.replace("—", "-").replace("–", "-").replace("_", "-")
     candidato = candidato.replace("|", "I").replace("!", "I")
     return re.sub(r"[^A-Z0-9-]", "", candidato)
 
 
 def formatear_placa(candidato):
-    """Respeta el guion leído o lo reconstruye en formatos comunes."""
+    """Detecta formatos comunes de placa, pero devuelve la placa SIN guiones."""
     candidato = corregir_errores_ocr(candidato)
     if not candidato:
         return None
 
-    if "-" in candidato:
-        partes = [p for p in candidato.split("-") if p]
-        unido = "".join(partes)
-        if len(partes) in (2, 3) and 5 <= len(unido) <= 8:
-            return "-".join(partes)
-
+    # Quitamos guiones, espacios y cualquier separador para el resultado final.
     limpio = re.sub(r"[^A-Z0-9]", "", candidato)
+
     if not 5 <= len(limpio) <= 8:
         return None
 
     patrones = [
-        (r"^[A-Z]{3}\d{3}[A-Z]$", (3, 3, 1)),
-        (r"^[A-Z]\d{2}[A-Z]{3}$", (1, 2, 3)),
-        (r"^[A-Z]{3}\d{2}[A-Z]$", (3, 2, 1)),
-        (r"^[A-Z]{2}\d{3}[A-Z]$", (2, 3, 1)),
-        (r"^[A-Z]\d{3}[A-Z]{2}$", (1, 3, 2)),
-        (r"^[A-Z]{3}\d{3}$", (3, 3)),
-        (r"^[A-Z]{2}\d{3}$", (2, 3)),
-        (r"^[A-Z]{3}\d{2}$", (3, 2)),
-        (r"^\d{3}[A-Z]{3}$", (3, 3)),
-        (r"^\d{2}[A-Z]{3}$", (2, 3)),
+        r"^[A-Z]{3}\d{3}[A-Z]$",
+        r"^[A-Z]\d{2}[A-Z]{3}$",
+        r"^[A-Z]{3}\d{2}[A-Z]$",
+        r"^[A-Z]{2}\d{3}[A-Z]$",
+        r"^[A-Z]\d{3}[A-Z]{2}$",
+        r"^[A-Z]{3}\d{3}$",
+        r"^[A-Z]{2}\d{3}$",
+        r"^[A-Z]{3}\d{2}$",
+        r"^\d{3}[A-Z]{3}$",
+        r"^\d{2}[A-Z]{3}$",
+        r"^[A-Z]{2}\d{2}[A-Z]{2}$",
+        r"^[A-Z]{2}\d{4}$",
     ]
 
-    for patron, cortes in patrones:
+    for patron in patrones:
         if re.fullmatch(patron, limpio):
-            partes = []
-            inicio = 0
-            for corte in cortes:
-                partes.append(limpio[inicio:inicio + corte])
-                inicio += corte
-            return "-".join(partes)
+            return limpio
 
     return None
 
@@ -1065,14 +1059,15 @@ def mostrar_lector_placas(df):
         """
         <div class="ocr-card">
         <b>Sube una foto de la placa</b><br>
-        El lector reconoce placas con guion y también intenta reconstruirlo si el OCR lo pierde.
-        <br><small>Ejemplos: MKJ-121-B · R20-BSD · D06-BND</small>
+        El lector identifica la placa y muestra únicamente letras y números, sin guiones.
+        <br><small>Ejemplos: MKJ121B · R20BSD · D06BND</small>
         </div>
         """,
         unsafe_allow_html=True
     )
 
     col_foto, col_cam = st.columns(2)
+
     with col_foto:
         fotos = st.file_uploader(
             "Selecciona foto(s) de placa",
@@ -1080,11 +1075,21 @@ def mostrar_lector_placas(df):
             accept_multiple_files=True,
             key="fotos_placas"
         )
+
     with col_cam:
-        foto_camara = st.camera_input(
-            "O toma la foto directamente",
-            key="foto_placa_camara"
+        activar_camara = st.checkbox(
+            "📷 Activar cámara",
+            key="activar_camara_placas",
+            help="La cámara permanece apagada hasta que actives esta opción."
         )
+
+        foto_camara = None
+
+        if activar_camara:
+            foto_camara = st.camera_input(
+                "Tomar foto de la placa",
+                key="foto_placa_camara"
+            )
 
     archivos = list(fotos) if fotos else []
     if foto_camara is not None:
@@ -1130,7 +1135,9 @@ def mostrar_lector_placas(df):
         encontrados = buscar_placa_en_concentrado(df, placa_detectada)
         col1, col2, col3 = st.columns([2.2, 2.2, 1.4])
         with col1:
-            st.markdown(f"**{placa_detectada}**")
+            # Siempre mostrar la placa sin guiones.
+            placa_mostrar = re.sub(r"[^A-Z0-9]", "", str(placa_detectada).upper())
+            st.markdown(f"**{placa_mostrar}**")
             st.caption(nombre_foto)
         with col2:
             if not encontrados.empty:
@@ -1143,8 +1150,9 @@ def mostrar_lector_placas(df):
                 key=f"usar_ocr_{i}",
                 use_container_width=True
             ):
-                st.session_state["busqueda_placa"] = placa_detectada
-                st.session_state["buscador_unidad"] = placa_detectada
+                placa_limpia = re.sub(r"[^A-Z0-9]", "", str(placa_detectada).upper())
+                st.session_state["busqueda_placa"] = placa_limpia
+                st.session_state["buscador_unidad"] = placa_limpia
                 st.rerun()
 
 
