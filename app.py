@@ -15,7 +15,7 @@ import pytesseract
 
 st.set_page_config(
     page_title="Casanova | Unidades en Centenario y Lala",
-    page_icon="🟡",
+    page_icon="🚗",
     layout="wide"
 )
 
@@ -71,7 +71,7 @@ html, body, [class*="css"], .stApp {{ font-family: 'Inter', sans-serif; }}
     pointer-events: none;
 }}
 .logo-c {{
-    z-index: 1; width: 58px; height: 58px; border-radius: 16px; flex-shrink: 0;
+    z-index: 1; width: 84px; height: 58px; border-radius: 16px; flex-shrink: 0;
     background: {AMARILLO}; color: {AZUL_MARINO};
     display: flex; align-items: center; justify-content: center;
     font-size: 34px; font-weight: 800;
@@ -253,7 +253,7 @@ def mostrar_login():
     st.markdown(
         """
 <div class="login-box">
-<div class="logo-c">C</div>
+<div class="logo-c"><svg viewBox="0 0 64 40" width="52" height="33" xmlns="http://www.w3.org/2000/svg"><path d="M3 29C3 23 7 21 13 19.5C17 12 25 7 34 7C44 7 51 12.5 54 19.5C59 20.5 62 23.5 62 29L62 31L3 31Z" fill="#213769"/><path d="M18.5 19.5C21.500 14 27 10.500 32.500 10.500L32.500 19.500Z" fill="#FFB700"/><path d="M36 10.500C42 10.800 47 14.500 49 19.500L36 19.500Z" fill="#FFB700"/><circle cx="58.500" cy="25" r="2.200" fill="#FFB700"/><rect x="3" y="27" width="5" height="2.500" rx="1" fill="#FFB700"/><circle cx="17" cy="31" r="8" fill="#FFB700"/><circle cx="17" cy="31" r="6.300" fill="#213769"/><circle cx="17" cy="31" r="2.300" fill="#FFB700"/><circle cx="49" cy="31" r="8" fill="#FFB700"/><circle cx="49" cy="31" r="6.300" fill="#213769"/><circle cx="49" cy="31" r="2.300" fill="#FFB700"/></svg></div>
 <div class="login-title">CASANOVA</div>
 <div class="login-subtitle">Unidades en Centenario y Lala</div>
 </div>
@@ -740,7 +740,7 @@ with col1:
     st.markdown(
         """
 <div class="topbar">
-<div class="logo-c">C</div>
+<div class="logo-c"><svg viewBox="0 0 64 40" width="52" height="33" xmlns="http://www.w3.org/2000/svg"><path d="M3 29C3 23 7 21 13 19.5C17 12 25 7 34 7C44 7 51 12.5 54 19.5C59 20.5 62 23.5 62 29L62 31L3 31Z" fill="#213769"/><path d="M18.5 19.5C21.500 14 27 10.500 32.500 10.500L32.500 19.500Z" fill="#FFB700"/><path d="M36 10.500C42 10.800 47 14.500 49 19.500L36 19.500Z" fill="#FFB700"/><circle cx="58.500" cy="25" r="2.200" fill="#FFB700"/><rect x="3" y="27" width="5" height="2.500" rx="1" fill="#FFB700"/><circle cx="17" cy="31" r="8" fill="#FFB700"/><circle cx="17" cy="31" r="6.300" fill="#213769"/><circle cx="17" cy="31" r="2.300" fill="#FFB700"/><circle cx="49" cy="31" r="8" fill="#FFB700"/><circle cx="49" cy="31" r="6.300" fill="#213769"/><circle cx="49" cy="31" r="2.300" fill="#FFB700"/></svg></div>
 <div class="topbar-txt">
 <div class="topbar-titulo">CASANOVA <b>|</b> UNIDADES EN CENTENARIO Y LALA</div>
 <div class="topbar-sub"><span class="sede">📍 Centenario</span><span class="sede">📍 Lala</span> Consulta individual de unidades</div>
