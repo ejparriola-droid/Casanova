@@ -6,7 +6,12 @@ import io
 from pathlib import Path
 
 import requests
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageEnhance, ImageFilter
+
+try:
+    import pytesseract
+except Exception:
+    pytesseract = None
 
 
 # =========================================================
@@ -1035,22 +1040,17 @@ def similitud_placa(a, b):
     return (ratio * 0.55) + (score_dist * 0.45)
 
 
-@st.cache_data(show_spinner=False)
 def obtener_placas_reales(df):
-    """Obtiene una sola vez las placas válidas del concentrado.
-    Se cachea para no volver a recorrer el Excel en cada interacción.
-    """
+    """Obtiene las placas válidas que existen en concentrado.xlsx."""
     if "PLACA" not in df.columns:
         return []
 
     placas = []
-    vistas = set()
 
     for valor in df["PLACA"].dropna().astype(str):
         limpia = normalizar_busqueda(valor)
 
-        if 5 <= len(limpia) <= 8 and limpia not in vistas:
-            vistas.add(limpia)
+        if 5 <= len(limpia) <= 8 and limpia not in placas:
             placas.append(limpia)
 
     return placas
@@ -1205,33 +1205,169 @@ def buscar_placa_en_concentrado(df, placa):
     return df[placas_df == objetivo].copy()
 
 
+def obtener_series_reales(df):
+    """Obtiene las series/VIN válidas que existen en concentrado.xlsx."""
+    if "SERIE" not in df.columns:
+        return []
+
+    series = []
+    for valor in df["SERIE"].dropna().astype(str):
+        limpia = normalizar_busqueda(valor)
+        if len(limpia) >= 8 and limpia not in series:
+            series.append(limpia)
+    return series
+
+
+def buscar_mejor_serie_concentrado(texto_ocr, df):
+    """
+    Busca una serie/VIN leída desde una fotografía contra las series reales
+    del concentrado. Primero intenta coincidencia exacta y después una
+    coincidencia tolerante para errores típicos de OCR.
+    """
+    if not texto_ocr or "SERIE" not in df.columns:
+        return None, 0.0, ""
+
+    texto_normalizado = normalizar_busqueda(texto_ocr)
+    if not texto_normalizado:
+        return None, 0.0, ""
+
+    series_reales = obtener_series_reales(df)
+    if not series_reales:
+        return None, 0.0, ""
+
+    # 1) Coincidencia exacta: la más confiable.
+    for serie in series_reales:
+        if serie in texto_normalizado:
+            return serie, 1.0, "Coincidencia exacta de VIN/serie por OCR"
+
+    # 2) Candidatos de 17 caracteres, que es la longitud habitual de un VIN.
+    candidatos = []
+    if len(texto_normalizado) >= 15:
+        for longitud in range(15, 19):
+            if len(texto_normalizado) < longitud:
+                continue
+            for i in range(len(texto_normalizado) - longitud + 1):
+                candidatos.append(texto_normalizado[i:i + longitud])
+
+    # 3) También usamos tokens largos por si OCR separó el VIN/serie.
+    for token in re.findall(r"[A-Z0-9]{8,25}", str(texto_ocr).upper()):
+        limpio = normalizar_busqueda(token)
+        if limpio:
+            candidatos.append(limpio)
+
+    # Evita comparar cientos de veces el mismo candidato.
+    candidatos = list(dict.fromkeys(candidatos))
+
+    mejor = None
+    for candidato in candidatos:
+        for serie_real in series_reales:
+            diferencia_longitud = abs(len(candidato) - len(serie_real))
+            if diferencia_longitud > 3:
+                continue
+
+            ratio = difflib.SequenceMatcher(None, candidato, serie_real).ratio()
+            distancia = distancia_edicion(candidato, serie_real)
+            max_len = max(len(candidato), len(serie_real))
+            score_dist = 1 - (distancia / max_len) if max_len else 0
+            score = (ratio * 0.55) + (score_dist * 0.45)
+
+            if mejor is None or score > mejor[0]:
+                mejor = (score, serie_real)
+
+    if mejor and mejor[0] >= 0.78:
+        return mejor[1], mejor[0], "Coincidencia corregida contra concentrado por OCR"
+
+    return None, 0.0, ""
+
+
+def leer_serie_desde_imagen(archivo, df):
+    """
+    OCR general para fotografías donde aparece el VIN/número de serie
+    en lugar de una placa. No sustituye Plate Recognizer; funciona como
+    segunda vía para que una misma foto pueda localizar la unidad por placa
+    o por VIN/serie.
+    """
+    if pytesseract is None:
+        return None, 0.0, "OCR de VIN/serie no disponible en este entorno."
+
+    try:
+        imagen = Image.open(archivo)
+        imagen = ImageOps.exif_transpose(imagen).convert("RGB")
+
+        # Reducimos imágenes gigantes para no gastar CPU innecesariamente.
+        max_lado = 2600
+        ancho, alto = imagen.size
+        if max(ancho, alto) > max_lado:
+            escala = max_lado / max(ancho, alto)
+            imagen = imagen.resize(
+                (int(ancho * escala), int(alto * escala)),
+                Image.Resampling.LANCZOS
+            )
+
+        gris = ImageOps.grayscale(imagen)
+        gris = ImageEnhance.Contrast(gris).enhance(1.8)
+        gris = gris.filter(ImageFilter.SHARPEN)
+
+        textos = []
+        configuraciones = [
+            "--psm 6 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
+            "--psm 11 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
+        ]
+
+        for config in configuraciones:
+            try:
+                texto = pytesseract.image_to_string(gris, config=config)
+                if texto:
+                    textos.append(texto)
+            except Exception:
+                continue
+
+        texto_completo = "\n".join(textos)
+        serie, score, metodo = buscar_mejor_serie_concentrado(
+            texto_completo,
+            df
+        )
+
+        if not serie:
+            return None, 0.0, "No se detectó un VIN/serie válido en la fotografía."
+
+        return serie, score, metodo
+
+    except Exception as e:
+        return None, 0.0, f"No se pudo leer el VIN/serie: {e}"
+
+
+def buscar_serie_en_concentrado(df, serie):
+    objetivo = normalizar_busqueda(serie)
+
+    if not objetivo or "SERIE" not in df.columns:
+        return pd.DataFrame()
+
+    series_df = df["SERIE"].apply(normalizar_busqueda)
+
+    return df[series_df == objetivo].copy()
+
+
 def mostrar_lector_placas(df):
-    titulo_seccion("📷 Leer placa desde una foto")
+    titulo_seccion("📷 Leer placa o VIN / serie desde una foto")
 
     st.markdown(
         """
         <div class="ocr-card">
-        <b>Lectura automática de placas</b><br>
-        La fotografía se procesa con un lector especializado de matrículas.
-        Después la placa se valida contra las placas que existen en tu concentrado.
-        <br><small>La placa se muestra únicamente con letras y números, sin guiones.</small>
+        <b>Lectura automática de placa o VIN / serie</b><br>
+        La fotografía se procesa para intentar identificar la unidad por su
+        <b>placa</b> o por su <b>VIN / número de serie</b>.
+        <br><small>Si la placa no se detecta, se intenta leer el VIN / serie como respaldo.</small>
         </div>
         """,
         unsafe_allow_html=True
     )
 
-    if not obtener_token_plate_recognizer():
-        st.warning(
-            "⚠️ Falta configurar el token de Plate Recognizer en "
-            "Streamlit Cloud → Settings → Secrets."
-        )
-        return
-
     col_foto, col_cam = st.columns(2)
 
     with col_foto:
         fotos = st.file_uploader(
-            "Selecciona foto(s) de placa",
+            "Selecciona foto(s) de placa o VIN / serie",
             type=["jpg", "jpeg", "png", "webp"],
             accept_multiple_files=True,
             key="fotos_placas"
@@ -1248,7 +1384,7 @@ def mostrar_lector_placas(df):
 
         if activar_camara:
             foto_camara = st.camera_input(
-                "Tomar foto de la placa",
+                "Tomar foto de placa o VIN / serie",
                 key="foto_placa_camara"
             )
 
@@ -1261,36 +1397,66 @@ def mostrar_lector_placas(df):
         return
 
     if st.button(
-        "🔎 Identificar placa",
+        "🔎 Identificar unidad",
         key="btn_leer_placas",
         type="primary",
         use_container_width=True
     ):
         todos = []
 
-        with st.spinner("Analizando placa..."):
-            for archivo in archivos:
-                resultados, error = leer_placa_plate_recognizer(
-                    archivo,
-                    df
-                )
+        for archivo in archivos:
+            # Primero intentamos placa con Plate Recognizer si hay token.
+            resultados_placa = []
+            error_placa = ""
 
-                if error:
-                    st.warning(f"{archivo.name}: {error}")
-                    continue
+            if obtener_token_plate_recognizer():
+                with st.spinner(f"Analizando {archivo.name}..."):
+                    resultados_placa, error_placa = leer_placa_plate_recognizer(
+                        archivo,
+                        df
+                    )
 
-                for resultado in resultados:
+            if resultados_placa:
+                for resultado in resultados_placa:
                     placa = resultado["placa"]
 
                     if not placa:
                         continue
 
                     if not any(
-                        x["placa"] == placa
+                        x.get("tipo") == "PLACA" and x.get("valor") == placa
                         for x in todos
                     ):
                         resultado["foto"] = archivo.name
+                        resultado["tipo"] = "PLACA"
+                        resultado["valor"] = placa
                         todos.append(resultado)
+
+            # También intentamos VIN/serie. Así una foto puede localizar la
+            # unidad aunque no haya placa o Plate Recognizer no la detecte.
+            with st.spinner(f"Buscando VIN / serie en {archivo.name}..."):
+                serie, score_serie, metodo_serie = leer_serie_desde_imagen(
+                    archivo,
+                    df
+                )
+
+            if serie:
+                if not any(
+                    x.get("tipo") == "SERIE" and x.get("valor") == serie
+                    for x in todos
+                ):
+                    todos.append({
+                        "tipo": "SERIE",
+                        "valor": serie,
+                        "serie": serie,
+                        "score_final": score_serie,
+                        "metodo": metodo_serie,
+                        "foto": archivo.name
+                    })
+            elif not resultados_placa and error_placa:
+                # Solo mostramos el error de Plate Recognizer si tampoco
+                # conseguimos localizar la unidad por VIN/serie.
+                st.warning(f"{archivo.name}: {error_placa}")
 
         st.session_state["placas_ocr"] = todos
 
@@ -1300,55 +1466,90 @@ def mostrar_lector_placas(df):
         return
 
     st.markdown(
-        '<div class="ocr-result">Placas detectadas</div>',
+        '<div class="ocr-result">Unidades detectadas</div>',
         unsafe_allow_html=True
     )
 
     for i, resultado in enumerate(resultados_ocr):
-        placa_detectada = resultado["placa"]
-        placa_original = resultado["placa_ocr"]
-        score_api = resultado["score_api"]
-        score_final = resultado["score_final"]
-        metodo = resultado["metodo"]
-        nombre_foto = resultado["foto"]
-
-        encontrados = buscar_placa_en_concentrado(
-            df,
-            placa_detectada
+        tipo = resultado.get("tipo", "PLACA")
+        valor_detectado = normalizar_busqueda(
+            resultado.get("valor", "")
         )
+        nombre_foto = resultado.get("foto", "")
 
-        col1, col2, col3 = st.columns([2.2, 2.2, 1.4])
-
-        with col1:
-            placa_mostrar = normalizar_busqueda(placa_detectada)
-            st.markdown(f"**{placa_mostrar}**")
-            st.caption(nombre_foto)
-            st.caption(
-                f"Lectura: {placa_original} · "
-                f"confianza API: {score_api:.0%}"
+        if tipo == "PLACA":
+            encontrados = buscar_placa_en_concentrado(
+                df,
+                valor_detectado
             )
 
-        with col2:
-            if not encontrados.empty:
-                st.success("✅ Encontrada en concentrado")
-                if placa_original != placa_detectada:
-                    st.caption(
-                        f"Se ajustó automáticamente contra el concentrado "
-                        f"({score_final:.0%})."
-                    )
-            else:
-                st.warning("⚠️ No encontrada en concentrado")
+            score_api = resultado.get("score_api", 0.0)
+            score_final = resultado.get("score_final", 0.0)
+            placa_original = resultado.get("placa_ocr", valor_detectado)
 
-        with col3:
-            if not encontrados.empty and st.button(
-                "Usar placa",
-                key=f"usar_ocr_{i}",
-                use_container_width=True
-            ):
-                placa_limpia = normalizar_busqueda(placa_detectada)
-                st.session_state["busqueda_placa"] = placa_limpia
-                st.session_state["buscador_unidad"] = placa_limpia
-                st.rerun()
+            col1, col2, col3 = st.columns([2.2, 2.2, 1.4])
+
+            with col1:
+                st.markdown(f"**🚘 PLACA: {valor_detectado}**")
+                st.caption(nombre_foto)
+                st.caption(
+                    f"Lectura: {placa_original} · "
+                    f"confianza API: {score_api:.0%}"
+                )
+
+            with col2:
+                if not encontrados.empty:
+                    st.success("✅ Encontrada en concentrado")
+                    if placa_original != valor_detectado:
+                        st.caption(
+                            f"Se ajustó automáticamente contra el concentrado "
+                            f"({score_final:.0%})."
+                        )
+                else:
+                    st.warning("⚠️ No encontrada en concentrado")
+
+            with col3:
+                if not encontrados.empty and st.button(
+                    "Usar placa",
+                    key=f"usar_ocr_{i}",
+                    use_container_width=True
+                ):
+                    st.session_state["busqueda_placa"] = valor_detectado
+                    st.session_state["buscador_unidad"] = valor_detectado
+                    st.rerun()
+
+        else:
+            encontrados = buscar_serie_en_concentrado(
+                df,
+                valor_detectado
+            )
+
+            score_final = resultado.get("score_final", 0.0)
+            metodo = resultado.get("metodo", "OCR")
+
+            col1, col2, col3 = st.columns([2.2, 2.2, 1.4])
+
+            with col1:
+                st.markdown(f"**🔑 VIN / SERIE: {valor_detectado}**")
+                st.caption(nombre_foto)
+                st.caption(f"{metodo} · confianza: {score_final:.0%}")
+
+            with col2:
+                if not encontrados.empty:
+                    st.success("✅ Encontrada en concentrado")
+                else:
+                    st.warning("⚠️ No encontrada en concentrado")
+
+            with col3:
+                if not encontrados.empty and st.button(
+                    "Usar VIN / serie",
+                    key=f"usar_serie_ocr_{i}",
+                    use_container_width=True
+                ):
+                    st.session_state["busqueda_placa"] = valor_detectado
+                    st.session_state["buscador_unidad"] = valor_detectado
+                    st.rerun()
+
 
 # ---------------------------------------------------------
 # TARJETAS
@@ -1570,10 +1771,7 @@ mostrar_lector_placas(df)
 # TOTAL DE UNIDADES
 # =========================================================
 
-@st.cache_data(show_spinner=False)
-def calcular_total_unidades(df):
-    if "SERIE" not in df.columns:
-        return 0
+if "SERIE" in df.columns:
 
     series_validas = (
         df["SERIE"]
@@ -1583,11 +1781,18 @@ def calcular_total_unidades(df):
         .str.upper()
     )
 
-    series_validas = series_validas[series_validas != ""]
-    return int(series_validas.nunique())
+    series_validas = series_validas[
+        series_validas != ""
+    ]
 
+    total_unidades = (
+        series_validas
+        .nunique()
+    )
 
-total_unidades = calcular_total_unidades(df)
+else:
+
+    total_unidades = 0
 
 
 # =========================================================
@@ -1636,19 +1841,19 @@ if not busqueda:
 # PREPARAR BÚSQUEDA
 # =========================================================
 
-@st.cache_data(show_spinner=False)
-def preparar_indices_busqueda(df):
-    """Prepara las columnas de búsqueda una sola vez por versión del Excel."""
-    salida = pd.DataFrame(index=df.index)
-    salida["PLACA"] = df["PLACA"].apply(normalizar_busqueda) if "PLACA" in df.columns else ""
-    salida["SERIE"] = df["SERIE"].apply(normalizar_busqueda) if "SERIE" in df.columns else ""
-    return salida
-
-
 criterio = normalizar_busqueda(busqueda)
-indices_busqueda = preparar_indices_busqueda(df)
-placas = indices_busqueda["PLACA"]
-series = indices_busqueda["SERIE"]
+
+
+placas = (
+    df["PLACA"]
+    .apply(normalizar_busqueda)
+)
+
+
+series = (
+    df["SERIE"]
+    .apply(normalizar_busqueda)
+)
 
 
 # =========================================================
