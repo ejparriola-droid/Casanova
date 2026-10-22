@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import re
+import difflib
 from pathlib import Path
 
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
@@ -942,22 +943,41 @@ def normalizar_busqueda(valor):
 # =========================================================
 
 def preparar_imagen_ocr(imagen):
-    """Prepara la foto para mejorar la lectura de la placa."""
+    """Genera una versión grande y contrastada para OCR."""
     imagen = ImageOps.exif_transpose(imagen).convert("RGB")
     ancho, alto = imagen.size
-    escala = 2.5 if ancho < 1800 else 1.6
+    escala = 3.0 if ancho < 1600 else 2.0
     imagen = imagen.resize(
         (int(ancho * escala), int(alto * escala)),
         Image.Resampling.LANCZOS
     )
     gris = ImageOps.grayscale(imagen)
-    gris = ImageEnhance.Contrast(gris).enhance(2.0)
-    gris = ImageEnhance.Sharpness(gris).enhance(2.0)
+    gris = ImageEnhance.Contrast(gris).enhance(2.4)
+    gris = ImageEnhance.Sharpness(gris).enhance(2.5)
     return gris.filter(ImageFilter.SHARPEN)
 
 
+def generar_variantes_ocr(imagen):
+    """Crea varias versiones de la foto; OCR no siempre funciona con una sola."""
+    base = preparar_imagen_ocr(imagen)
+    variantes = [base]
+
+    # Blanco/negro con diferentes umbrales.
+    for umbral in (100, 130, 160, 190):
+        try:
+            binaria = base.point(lambda p, t=umbral: 255 if p > t else 0)
+            variantes.append(binaria)
+        except Exception:
+            pass
+
+    # Contraste extra.
+    variantes.append(ImageEnhance.Contrast(base).enhance(3.2))
+    variantes.append(ImageEnhance.Sharpness(base).enhance(4.0))
+    return variantes
+
+
 def corregir_errores_ocr(candidato):
-    """Limpia el resultado del OCR y deja únicamente letras y números."""
+    """Limpia errores comunes del OCR."""
     candidato = str(candidato).upper().replace(" ", "")
     candidato = candidato.replace("—", "-").replace("–", "-").replace("_", "-")
     candidato = candidato.replace("|", "I").replace("!", "I")
@@ -965,12 +985,8 @@ def corregir_errores_ocr(candidato):
 
 
 def formatear_placa(candidato):
-    """Detecta formatos comunes de placa, pero devuelve la placa SIN guiones."""
+    """Devuelve la placa únicamente con letras y números."""
     candidato = corregir_errores_ocr(candidato)
-    if not candidato:
-        return None
-
-    # Quitamos guiones, espacios y cualquier separador para el resultado final.
     limpio = re.sub(r"[^A-Z0-9]", "", candidato)
 
     if not 5 <= len(limpio) <= 8:
@@ -995,20 +1011,34 @@ def formatear_placa(candidato):
         if re.fullmatch(patron, limpio):
             return limpio
 
-    return None
+    # Para OCR permitimos candidatos no perfectos; después se comparan
+    # contra las placas reales del concentrado.
+    return limpio if 5 <= len(limpio) <= 8 else None
 
 
 def extraer_candidatos_ocr(texto):
+    """Extrae cadenas que podrían ser placas, incluso si el OCR perdió un carácter."""
     texto = texto.upper().replace("—", "-").replace("–", "-").replace("_", "-")
     encontrados = []
+
+    # Formatos con guiones: MKJ-121-B, D06-BND, etc.
     encontrados.extend(re.findall(
         r"[A-Z0-9]{1,4}\s*[-]\s*[A-Z0-9]{1,4}(?:\s*[-]\s*[A-Z0-9]{1,3})?",
         texto
     ))
+
+    # Cadenas completas sin guiones.
     encontrados.extend(re.findall(
         r"(?<![A-Z0-9])[A-Z0-9]{5,8}(?![A-Z0-9])",
         texto
     ))
+
+    # También quitamos separadores de cada línea. Esto ayuda cuando Tesseract
+    # devuelve "KJ-121-B" separado en partes.
+    for linea in texto.splitlines():
+        compacto = re.sub(r"[^A-Z0-9]", "", linea)
+        if 5 <= len(compacto) <= 8:
+            encontrados.append(compacto)
 
     resultados = []
     for candidato in encontrados:
@@ -1018,30 +1048,144 @@ def extraer_candidatos_ocr(texto):
     return resultados
 
 
-def leer_placa_foto(archivo):
+def distancia_edicion(a, b):
+    """Distancia Levenshtein pequeña, sin depender de paquetes externos."""
+    if a == b:
+        return 0
+    if not a:
+        return len(b)
+    if not b:
+        return len(a)
+
+    anterior = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        actual = [i]
+        for j, cb in enumerate(b, 1):
+            actual.append(min(
+                actual[-1] + 1,
+                anterior[j] + 1,
+                anterior[j - 1] + (ca != cb)
+            ))
+        anterior = actual
+    return anterior[-1]
+
+
+def similitud_placa(a, b):
+    """Combina similitud y distancia para tolerar errores típicos de OCR."""
+    a = normalizar_busqueda(a)
+    b = normalizar_busqueda(b)
+    if not a or not b:
+        return 0.0
+    ratio = difflib.SequenceMatcher(None, a, b).ratio()
+    distancia = distancia_edicion(a, b)
+    max_len = max(len(a), len(b))
+    score_dist = 1 - (distancia / max_len)
+    return (ratio * 0.55) + (score_dist * 0.45)
+
+
+def obtener_placas_reales(df):
+    """Obtiene las placas que realmente existen en concentrado."""
+    if "PLACA" not in df.columns:
+        return []
+
+    placas = []
+    for valor in df["PLACA"].dropna().astype(str):
+        limpia = normalizar_busqueda(valor)
+        if 5 <= len(limpia) <= 8 and limpia not in placas:
+            placas.append(limpia)
+    return placas
+
+
+def corregir_contra_concentrado(candidatos, df):
+    """
+    La mejora importante:
+    el OCR puede leer D06-BNO, pero si en concentrado existe D06-BND,
+    se corrige automáticamente a D06BND.
+    """
+    reales = obtener_placas_reales(df)
+    resultados = []
+
+    for candidato in candidatos:
+        candidato = normalizar_busqueda(candidato)
+        if not candidato:
+            continue
+
+        # Coincidencia exacta primero.
+        if candidato in reales:
+            resultado = (candidato, 1.0, "Coincidencia exacta")
+            if resultado[0] not in [x[0] for x in resultados]:
+                resultados.append(resultado)
+            continue
+
+        mejores = []
+        for real in reales:
+            # No permitimos demasiada diferencia: evita falsas coincidencias.
+            distancia = distancia_edicion(candidato, real)
+            diferencia_longitud = abs(len(candidato) - len(real))
+
+            if diferencia_longitud > 2 or distancia > 2:
+                continue
+
+            score = similitud_placa(candidato, real)
+            mejores.append((score, real, distancia))
+
+        if mejores:
+            mejores.sort(reverse=True)
+            score, real, distancia = mejores[0]
+
+            # Umbral alto para corregir automáticamente.
+            if score >= 0.78:
+                resultado = (real, score, f"Corregida por coincidencia OCR ({score:.0%})")
+                if resultado[0] not in [x[0] for x in resultados]:
+                    resultados.append(resultado)
+
+    resultados.sort(key=lambda x: x[1], reverse=True)
+    return resultados
+
+
+def leer_placa_foto(archivo, df):
     try:
         imagen_original = Image.open(archivo)
     except Exception:
         return [], "No se pudo abrir la imagen."
 
-    base = preparar_imagen_ocr(imagen_original)
     candidatos = []
+    variantes = generar_variantes_ocr(imagen_original)
 
-    for psm in (6, 11, 12, 13):
-        try:
-            texto = pytesseract.image_to_string(
-                base,
-                config=f"--oem 3 --psm {psm}",
-                lang="eng"
-            )
-        except Exception as e:
-            return [], f"No se pudo ejecutar OCR: {e}"
+    # Varias configuraciones de Tesseract. PSM 7/8 son muy útiles cuando
+    # la foto está centrada en la placa; 6/11 sirven para fotos completas.
+    configuraciones = (
+        (7, "-c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-"),
+        (8, "-c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-"),
+        (6, "-c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-"),
+        (11, "-c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-"),
+    )
 
-        for placa in extraer_candidatos_ocr(texto):
-            if placa not in candidatos:
-                candidatos.append(placa)
+    for imagen in variantes:
+        for psm, extra in configuraciones:
+            try:
+                texto = pytesseract.image_to_string(
+                    imagen,
+                    config=f"--oem 3 --psm {psm} {extra}",
+                    lang="eng"
+                )
+            except Exception as e:
+                return [], f"No se pudo ejecutar OCR: {e}"
 
-    return candidatos, ""
+            for placa in extraer_candidatos_ocr(texto):
+                if placa not in candidatos:
+                    candidatos.append(placa)
+
+    # Primero intenta coincidencia exacta y luego corrige errores del OCR
+    # usando las placas que de verdad existen en el concentrado.
+    corregidos = corregir_contra_concentrado(candidatos, df)
+
+    if corregidos:
+        return corregidos, ""
+
+    # Si no existe en concentrado, devolvemos candidatos del OCR para que
+    # el usuario pueda ver qué alcanzó a leer.
+    return [(x, 0.0, "Detectada por OCR") for x in candidatos], ""
 
 
 def buscar_placa_en_concentrado(df, placa):
@@ -1106,13 +1250,14 @@ def mostrar_lector_placas(df):
         todos = []
         with st.spinner("Leyendo placa..."):
             for archivo in archivos:
-                candidatos, error = leer_placa_foto(archivo)
+                candidatos, error = leer_placa_foto(archivo, df)
                 if error:
                     st.warning(f"{archivo.name}: {error}")
                     continue
-                for candidato in candidatos:
+                for candidato, confianza, metodo in candidatos:
+                    item = (candidato, archivo.name, confianza, metodo)
                     if candidato not in [x[0] for x in todos]:
-                        todos.append((candidato, archivo.name))
+                        todos.append(item)
 
         if not todos:
             st.warning(
@@ -1131,7 +1276,7 @@ def mostrar_lector_placas(df):
         unsafe_allow_html=True
     )
 
-    for i, (placa_detectada, nombre_foto) in enumerate(resultados_ocr):
+    for i, (placa_detectada, nombre_foto, confianza, metodo) in enumerate(resultados_ocr):
         encontrados = buscar_placa_en_concentrado(df, placa_detectada)
         col1, col2, col3 = st.columns([2.2, 2.2, 1.4])
         with col1:
@@ -1139,6 +1284,10 @@ def mostrar_lector_placas(df):
             placa_mostrar = re.sub(r"[^A-Z0-9]", "", str(placa_detectada).upper())
             st.markdown(f"**{placa_mostrar}**")
             st.caption(nombre_foto)
+            if confianza > 0:
+                st.caption(f"{metodo} · confianza {confianza:.0%}")
+            else:
+                st.caption(metodo)
         with col2:
             if not encontrados.empty:
                 st.success("Encontrada en concentrado")
@@ -1967,3 +2116,4 @@ st.download_button(
 st.caption(
     "Casanova | Control de Unidades"
 )
+
